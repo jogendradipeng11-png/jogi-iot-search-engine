@@ -35,18 +35,19 @@
     }
 
     .sidebar {
-      width: 280px;
+      width: 290px;
       background: var(--sidebar);
       border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
       padding: 20px 16px;
+      overflow-y: auto;
     }
 
     .logo {
-      font-size: 1.35rem;
+      font-size: 1.4rem;
       font-weight: 800;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       background: linear-gradient(90deg, var(--accent), var(--accent2));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -55,7 +56,7 @@
     .tagline {
       font-size: 0.75rem;
       color: var(--muted);
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
     .new-chat {
@@ -66,20 +67,16 @@
       border-radius: 10px;
       font-weight: 600;
       cursor: pointer;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
       transition: 0.2s;
     }
     .new-chat:hover { opacity: 0.9; transform: translateY(-1px); }
 
-    .history {
-      flex: 1;
-      overflow-y: auto;
-      font-size: 0.88rem;
-    }
+    .history { flex: 1; }
 
     .settings {
       border-top: 1px solid var(--border);
-      padding-top: 16px;
+      padding-top: 14px;
       font-size: 0.82rem;
     }
 
@@ -89,7 +86,9 @@
       color: var(--muted);
     }
 
-    .settings select, .settings input, .settings textarea {
+    .settings select,
+    .settings input,
+    .settings textarea {
       width: 100%;
       background: var(--card);
       border: 1px solid var(--border);
@@ -100,7 +99,7 @@
     }
 
     .settings textarea {
-      height: 90px;
+      height: 85px;
       resize: vertical;
       font-family: monospace;
       font-size: 0.78rem;
@@ -108,7 +107,7 @@
 
     .key-status {
       font-size: 0.75rem;
-      margin-top: 8px;
+      margin-top: 6px;
       color: var(--muted);
     }
 
@@ -126,10 +125,7 @@
       justify-content: space-between;
     }
 
-    .header h1 {
-      font-size: 1.05rem;
-      font-weight: 600;
-    }
+    .header h1 { font-size: 1.05rem; font-weight: 600; }
 
     .status {
       font-size: 0.8rem;
@@ -193,7 +189,10 @@
       overflow-x: auto;
       margin: 12px 0;
     }
-    .content code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.87rem; }
+    .content code {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.87rem;
+    }
 
     .input-area {
       padding: 16px 24px 24px;
@@ -302,20 +301,20 @@
     <div class="history" id="history"></div>
 
     <div class="settings">
-      <label>Backend Priority</label>
+      <label>Backend</label>
       <select id="backend" onchange="saveSettings()">
-        <option value="nvidia">NVIDIA Multi-Key (Recommended)</option>
-        <option value="ollama">Ollama Local Only</option>
+        <option value="ollama">Ollama (Recommended)</option>
+        <option value="nvidia">NVIDIA Multi-Key</option>
       </select>
 
-      <label>NVIDIA API Keys (one per line – up to 10)</label>
+      <label>NVIDIA API Keys (one per line)</label>
       <textarea id="apiKeys" placeholder="nvapi-xxxx&#10;nvapi-yyyy&#10;nvapi-zzzz" onchange="saveSettings()"></textarea>
       <div class="key-status" id="keyStatus">0 keys loaded</div>
 
       <label>NVIDIA Model</label>
       <input type="text" id="model" value="meta/llama-3.1-70b-instruct" onchange="saveSettings()" />
 
-      <label>Ollama URL (fallback)</label>
+      <label>Ollama URL</label>
       <input type="text" id="ollamaUrl" value="http://localhost:11434" onchange="saveSettings()" />
 
       <label>Ollama Model</label>
@@ -328,14 +327,15 @@
       <h1>Jogi IoT Search Engine</h1>
       <div class="status">
         <div class="dot" id="statusDot"></div>
-        <span id="statusText">Ready • Multi-key rotation active</span>
+        <span id="statusText">Ready</span>
       </div>
     </div>
 
     <div class="chat-container" id="chat">
       <div class="empty" id="empty">
         <h2>Jogi IoT Search Engine</h2>
-        <p>Private • Unlimited • Multi-Key NVIDIA Rotation<br>Ask anything about code, IoT, electronics & more</p>
+        <p>Private • Unlimited AI Search<br>
+           Best with Ollama (local)</p>
       </div>
     </div>
 
@@ -352,13 +352,13 @@
         <div class="hint" onclick="setHint('Write ESP32 code for MQTT sensor data')">ESP32 MQTT</div>
         <div class="hint" onclick="setHint('Best practices for IoT security 2026')">IoT Security</div>
         <div class="hint" onclick="setHint('Create a React dashboard for real-time IoT data')">IoT Dashboard</div>
-        <div class="hint" onclick="setHint('Explain how to use NVIDIA NIM free API')">NVIDIA NIM Help</div>
+        <div class="hint" onclick="setHint('Explain how async/await works with examples')">Explain async/await</div>
       </div>
     </div>
   </div>
 
 <script>
-  // ========== SAFE STORAGE (fixes sandbox error) ==========
+  // ========== SAFE STORAGE ==========
   const memoryStore = {};
 
   function safeGet(key, defaultValue = '') {
@@ -366,9 +366,7 @@
       if (typeof localStorage !== 'undefined') {
         return localStorage.getItem(key) ?? defaultValue;
       }
-    } catch (e) {
-      // Sandboxed – use memory
-    }
+    } catch (e) {}
     return memoryStore[key] ?? defaultValue;
   }
 
@@ -378,9 +376,7 @@
         localStorage.setItem(key, value);
         return;
       }
-    } catch (e) {
-      // Sandboxed – fall back to memory
-    }
+    } catch (e) {}
     memoryStore[key] = value;
   }
 
@@ -392,7 +388,7 @@
 
   // ========== SETTINGS ==========
   function loadSettings() {
-    document.getElementById('backend').value = safeGet('jogi_backend', 'nvidia');
+    document.getElementById('backend').value = safeGet('jogi_backend', 'ollama');
     document.getElementById('apiKeys').value = safeGet('jogi_keys', '');
     document.getElementById('model').value = safeGet('jogi_model', 'meta/llama-3.1-70b-instruct');
     document.getElementById('ollamaUrl').value = safeGet('jogi_ollama', 'http://localhost:11434');
@@ -414,7 +410,7 @@
     keys = raw.split('\n')
       .map(k => k.trim())
       .filter(k => k.startsWith('nvapi-') || k.length > 20);
-    document.getElementById('keyStatus').textContent = `${keys.length} key${keys.length !== 1 ? 's' : ''} loaded • Rotation ready`;
+    document.getElementById('keyStatus').textContent = `${keys.length} key${keys.length !== 1 ? 's' : ''} loaded`;
   }
 
   loadSettings();
@@ -425,7 +421,8 @@
     document.getElementById('chat').innerHTML = `
       <div class="empty" id="empty">
         <h2>Jogi IoT Search Engine</h2>
-        <p>Private • Unlimited • Multi-Key NVIDIA Rotation<br>Ask anything about code, IoT, electronics & more</p>
+        <p>Private • Unlimited AI Search<br>
+           Best with Ollama (local)</p>
       </div>`;
   }
 
@@ -460,8 +457,9 @@
     `;
     chat.appendChild(div);
     chat.scrollTop = chat.scrollHeight;
+
     div.querySelectorAll('pre code').forEach(el => {
-      try { hljs.highlightElement(el); } catch(e){}
+      try { hljs.highlightElement(el); } catch(e) {}
     });
   }
 
@@ -491,9 +489,11 @@
     if (type === 'error') dot.classList.add('error');
   }
 
-  // ========== NVIDIA WITH ROTATION ==========
+  // ========== NVIDIA (Direct - may fail due to CORS) ==========
   async function callNVIDIAWithRotation(prompt) {
-    if (keys.length === 0) throw new Error('No NVIDIA API keys added. Paste up to 10 keys (one per line).');
+    if (keys.length === 0) {
+      throw new Error('No NVIDIA API keys added.');
+    }
 
     const model = document.getElementById('model').value;
     let lastError = null;
@@ -532,7 +532,7 @@
         }
 
         if (!res.ok) {
-          lastError = `Key #${idx + 1} error: ${res.status}`;
+          lastError = `Key #${idx + 1} error ${res.status}`;
           continue;
         }
 
@@ -547,10 +547,10 @@
       }
     }
 
-    throw new Error(`All ${keys.length} NVIDIA keys failed. Last error: ${lastError}`);
+    throw new Error(`All NVIDIA keys failed. Last error: ${lastError}. Tip: Use Ollama instead (recommended).`);
   }
 
-  // ========== OLLAMA FALLBACK ==========
+  // ========== OLLAMA ==========
   async function callOllama(prompt) {
     const url = document.getElementById('ollamaUrl').value.replace(/\/$/, '') + '/api/chat';
     const model = document.getElementById('ollamaModel').value;
@@ -561,7 +561,7 @@
       body: JSON.stringify({
         model: model,
         messages: [
-          { role: 'system', content: 'You are Jogi IoT Search Engine – expert in coding and IoT.' },
+          { role: 'system', content: 'You are Jogi IoT Search Engine – expert in coding and IoT. Give clear answers with code examples.' },
           ...messages,
           { role: 'user', content: prompt }
         ],
@@ -569,7 +569,7 @@
       })
     });
 
-    if (!res.ok) throw new Error('Ollama error ' + res.status);
+    if (!res.ok) throw new Error('Ollama error ' + res.status + '. Make sure Ollama is running.');
     const data = await res.json();
     return data.message.content;
   }
@@ -599,7 +599,7 @@
         } catch (nvidiaErr) {
           setStatus('NVIDIA failed → trying Ollama...', 'warning');
           reply = await callOllama(text);
-          setStatus('Ollama fallback active', 'ok');
+          setStatus('Ollama active', 'ok');
         }
       } else {
         reply = await callOllama(text);
@@ -608,12 +608,12 @@
       removeTyping();
       addMessage('assistant', reply);
       messages.push({ role: 'assistant', content: reply });
-      setStatus('Ready • Multi-key rotation active', 'ok');
+      setStatus('Ready', 'ok');
 
     } catch (err) {
       removeTyping();
       addMessage('assistant', `**Error:** ${err.message}`);
-      setStatus('Error – check keys / Ollama', 'error');
+      setStatus('Error', 'error');
     }
 
     isLoading = false;
