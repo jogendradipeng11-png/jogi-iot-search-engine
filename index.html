@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jogi IoT Search Engine</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --sidebar: #111827;
+      --card: #1a2332;
+      --border: #2d3748;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent2: #06b6d4;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --user-bg: #1e3a5f;
+      --ai-bg: #1e293b;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 280px;
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 20px 16px;
+    }
+
+    .logo {
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .tagline {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    .new-chat {
+      background: linear-gradient(90deg, var(--accent), #2563eb);
+      color: white;
+      border: none;
+      padding: 11px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 20px;
+      transition: 0.2s;
+    }
+    .new-chat:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .history {
+      flex: 1;
+      overflow-y: auto;
+      font-size: 0.88rem;
+    }
+
+    .settings {
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+      font-size: 0.82rem;
+    }
+
+    .settings label {
+      display: block;
+      margin: 10px 0 4px;
+      color: var(--muted);
+    }
+
+    .settings select, .settings input, .settings textarea {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+
+    .settings textarea {
+      height: 90px;
+      resize: vertical;
+      font-family: monospace;
+      font-size: 0.78rem;
+    }
+
+    .key-status {
+      font-size: 0.75rem;
+      margin-top: 8px;
+      color: var(--muted);
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header h1 {
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    .status {
+      font-size: 0.8rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+    }
+    .dot.warning { background: var(--warning); }
+    .dot.error { background: #ef4444; }
+
+    .chat-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .message {
+      max-width: 820px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      gap: 14px;
+    }
+
+    .avatar {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+    .avatar.user { background: #1d4ed8; }
+    .avatar.ai { background: linear-gradient(135deg, #0ea5e9, #3b82f6); }
+
+    .content {
+      flex: 1;
+      background: var(--ai-bg);
+      padding: 14px 18px;
+      border-radius: 12px;
+      line-height: 1.65;
+      font-size: 0.95rem;
+    }
+    .message.user .content { background: var(--user-bg); }
+
+    .content pre {
+      background: #0d1117;
+      border-radius: 8px;
+      padding: 14px;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+    .content code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.87rem; }
+
+    .input-area {
+      padding: 16px 24px 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    .input-box {
+      max-width: 820px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    textarea#input {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 14px 52px 14px 16px;
+      border-radius: 14px;
+      resize: none;
+      font-size: 1rem;
+      min-height: 56px;
+      max-height: 160px;
+      outline: none;
+    }
+    textarea#input:focus { border-color: var(--accent); }
+
+    .send-btn {
+      position: absolute;
+      right: 10px; bottom: 10px;
+      background: var(--accent);
+      border: none;
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .send-btn:disabled { background: var(--border); cursor: not-allowed; }
+
+    .hints {
+      max-width: 820px;
+      margin: 12px auto 0;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .hint {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .hint:hover { border-color: var(--accent); color: var(--text); }
+
+    .empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: var(--muted);
+      padding: 40px;
+    }
+    .empty h2 {
+      font-size: 1.9rem;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+    }
+
+    .typing { display: flex; gap: 5px; padding: 6px 0; }
+    .typing span {
+      width: 8px; height: 8px;
+      background: var(--muted);
+      border-radius: 50%;
+      animation: bounce 1.4s infinite ease-in-out;
+    }
+    .typing span:nth-child(1) { animation-delay: -0.32s; }
+    .typing span:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <div class="logo">Jogi IoT</div>
+    <div class="tagline">Unlimited AI Search Engine</div>
+
+    <button class="new-chat" onclick="newChat()">+ New Search</button>
+
+    <div class="history" id="history"></div>
+
+    <div class="settings">
+      <label>Backend Priority</label>
+      <select id="backend" onchange="saveSettings()">
+        <option value="nvidia">NVIDIA Multi-Key (Recommended)</option>
+        <option value="ollama">Ollama Local Only</option>
+      </select>
+
+      <label>NVIDIA API Keys (one per line – up to 10)</label>
+      <textarea id="apiKeys" placeholder="nvapi-xxxx&#10;nvapi-yyyy&#10;nvapi-zzzz" onchange="saveSettings()"></textarea>
+      <div class="key-status" id="keyStatus">0 keys loaded</div>
+
+      <label>NVIDIA Model</label>
+      <input type="text" id="model" value="meta/llama-3.1-70b-instruct" onchange="saveSettings()" />
+
+      <label>Ollama URL (fallback)</label>
+      <input type="text" id="ollamaUrl" value="http://localhost:11434" onchange="saveSettings()" />
+
+      <label>Ollama Model</label>
+      <input type="text" id="ollamaModel" value="qwen2.5-coder:14b" onchange="saveSettings()" />
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="header">
+      <h1>Jogi IoT Search Engine</h1>
+      <div class="status">
+        <div class="dot" id="statusDot"></div>
+        <span id="statusText">Ready • Multi-key rotation active</span>
+      </div>
+    </div>
+
+    <div class="chat-container" id="chat">
+      <div class="empty" id="empty">
+        <h2>Jogi IoT Search Engine</h2>
+        <p>Private • Unlimited • Multi-Key NVIDIA Rotation<br>Ask anything about code, IoT, electronics & more</p>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-box">
+        <textarea id="input" rows="1" placeholder="Search code, IoT, fix bugs, generate solutions..." onkeydown="handleKey(event)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="hints">
+        <div class="hint" onclick="setHint('Write ESP32 code for MQTT sensor data')">ESP32 MQTT</div>
+        <div class="hint" onclick="setHint('Best practices for IoT security 2026')">IoT Security</div>
+        <div class="hint" onclick="setHint('Create a React dashboard for real-time IoT data')">IoT Dashboard</div>
+        <div class="hint" onclick="setHint('Explain how to use NVIDIA NIM free API')">NVIDIA NIM Help</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ========== SAFE STORAGE (fixes sandbox error) ==========
+  const memoryStore = {};
+
+  function safeGet(key, defaultValue = '') {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        return localStorage.getItem(key) ?? defaultValue;
+      }
+    } catch (e) {
+      // Sandboxed – use memory
+    }
+    return memoryStore[key] ?? defaultValue;
+  }
+
+  function safeSet(key, value) {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(key, value);
+        return;
+      }
+    } catch (e) {
+      // Sandboxed – fall back to memory
+    }
+    memoryStore[key] = value;
+  }
+
+  // ========== STATE ==========
+  let messages = [];
+  let isLoading = false;
+  let currentKeyIndex = 0;
+  let keys = [];
+
+  // ========== SETTINGS ==========
+  function loadSettings() {
+    document.getElementById('backend').value = safeGet('jogi_backend', 'nvidia');
+    document.getElementById('apiKeys').value = safeGet('jogi_keys', '');
+    document.getElementById('model').value = safeGet('jogi_model', 'meta/llama-3.1-70b-instruct');
+    document.getElementById('ollamaUrl').value = safeGet('jogi_ollama', 'http://localhost:11434');
+    document.getElementById('ollamaModel').value = safeGet('jogi_ollama_model', 'qwen2.5-coder:14b');
+    updateKeys();
+  }
+
+  function saveSettings() {
+    safeSet('jogi_backend', document.getElementById('backend').value);
+    safeSet('jogi_keys', document.getElementById('apiKeys').value);
+    safeSet('jogi_model', document.getElementById('model').value);
+    safeSet('jogi_ollama', document.getElementById('ollamaUrl').value);
+    safeSet('jogi_ollama_model', document.getElementById('ollamaModel').value);
+    updateKeys();
+  }
+
+  function updateKeys() {
+    const raw = document.getElementById('apiKeys').value;
+    keys = raw.split('\n')
+      .map(k => k.trim())
+      .filter(k => k.startsWith('nvapi-') || k.length > 20);
+    document.getElementById('keyStatus').textContent = `${keys.length} key${keys.length !== 1 ? 's' : ''} loaded • Rotation ready`;
+  }
+
+  loadSettings();
+
+  // ========== UI ==========
+  function newChat() {
+    messages = [];
+    document.getElementById('chat').innerHTML = `
+      <div class="empty" id="empty">
+        <h2>Jogi IoT Search Engine</h2>
+        <p>Private • Unlimited • Multi-Key NVIDIA Rotation<br>Ask anything about code, IoT, electronics & more</p>
+      </div>`;
+  }
+
+  function setHint(text) {
+    document.getElementById('input').value = text;
+    document.getElementById('input').focus();
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  function addMessage(role, content) {
+    const empty = document.getElementById('empty');
+    if (empty) empty.remove();
+
+    const chat = document.getElementById('chat');
+    const div = document.createElement('div');
+    div.className = `message ${role}`;
+
+    const avatarText = role === 'user' ? 'You' : 'JI';
+    const avatarClass = role === 'user' ? 'user' : 'ai';
+
+    let html = role === 'assistant' ? marked.parse(content) : content;
+
+    div.innerHTML = `
+      <div class="avatar ${avatarClass}">${avatarText}</div>
+      <div class="content">${html}</div>
+    `;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+    div.querySelectorAll('pre code').forEach(el => {
+      try { hljs.highlightElement(el); } catch(e){}
+    });
+  }
+
+  function showTyping() {
+    const chat = document.getElementById('chat');
+    const div = document.createElement('div');
+    div.className = 'message assistant';
+    div.id = 'typing';
+    div.innerHTML = `
+      <div class="avatar ai">JI</div>
+      <div class="content"><div class="typing"><span></span><span></span><span></span></div></div>
+    `;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function removeTyping() {
+    const t = document.getElementById('typing');
+    if (t) t.remove();
+  }
+
+  function setStatus(text, type = 'ok') {
+    document.getElementById('statusText').textContent = text;
+    const dot = document.getElementById('statusDot');
+    dot.className = 'dot';
+    if (type === 'warning') dot.classList.add('warning');
+    if (type === 'error') dot.classList.add('error');
+  }
+
+  // ========== NVIDIA WITH ROTATION ==========
+  async function callNVIDIAWithRotation(prompt) {
+    if (keys.length === 0) throw new Error('No NVIDIA API keys added. Paste up to 10 keys (one per line).');
+
+    const model = document.getElementById('model').value;
+    let lastError = null;
+
+    for (let i = 0; i < keys.length; i++) {
+      const idx = (currentKeyIndex + i) % keys.length;
+      const key = keys[idx];
+
+      try {
+        setStatus(`Trying key #${idx + 1}/${keys.length}...`, 'warning');
+
+        const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${key}`
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: [
+              {
+                role: 'system',
+                content: 'You are Jogi IoT Search Engine – an expert AI for coding, IoT, electronics, embedded systems, and software development. Give clear, practical answers with code examples. Always format code with markdown.'
+              },
+              ...messages,
+              { role: 'user', content: prompt }
+            ],
+            temperature: 0.2,
+            max_tokens: 2048
+          })
+        });
+
+        if (res.status === 429 || res.status === 402 || res.status === 403) {
+          lastError = `Key #${idx + 1} quota/rate limited`;
+          continue;
+        }
+
+        if (!res.ok) {
+          lastError = `Key #${idx + 1} error: ${res.status}`;
+          continue;
+        }
+
+        const data = await res.json();
+        currentKeyIndex = idx;
+        setStatus(`Active key #${idx + 1} • Ready`, 'ok');
+        return data.choices[0].message.content;
+
+      } catch (err) {
+        lastError = err.message;
+        continue;
+      }
+    }
+
+    throw new Error(`All ${keys.length} NVIDIA keys failed. Last error: ${lastError}`);
+  }
+
+  // ========== OLLAMA FALLBACK ==========
+  async function callOllama(prompt) {
+    const url = document.getElementById('ollamaUrl').value.replace(/\/$/, '') + '/api/chat';
+    const model = document.getElementById('ollamaModel').value;
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: model,
+        messages: [
+          { role: 'system', content: 'You are Jogi IoT Search Engine – expert in coding and IoT.' },
+          ...messages,
+          { role: 'user', content: prompt }
+        ],
+        stream: false
+      })
+    });
+
+    if (!res.ok) throw new Error('Ollama error ' + res.status);
+    const data = await res.json();
+    return data.message.content;
+  }
+
+  // ========== MAIN SEND ==========
+  async function sendMessage() {
+    const input = document.getElementById('input');
+    const text = input.value.trim();
+    if (!text || isLoading) return;
+
+    isLoading = true;
+    document.getElementById('sendBtn').disabled = true;
+    input.value = '';
+
+    addMessage('user', text);
+    messages.push({ role: 'user', content: text });
+
+    showTyping();
+
+    try {
+      let reply;
+      const backend = document.getElementById('backend').value;
+
+      if (backend === 'nvidia') {
+        try {
+          reply = await callNVIDIAWithRotation(text);
+        } catch (nvidiaErr) {
+          setStatus('NVIDIA failed → trying Ollama...', 'warning');
+          reply = await callOllama(text);
+          setStatus('Ollama fallback active', 'ok');
+        }
+      } else {
+        reply = await callOllama(text);
+      }
+
+      removeTyping();
+      addMessage('assistant', reply);
+      messages.push({ role: 'assistant', content: reply });
+      setStatus('Ready • Multi-key rotation active', 'ok');
+
+    } catch (err) {
+      removeTyping();
+      addMessage('assistant', `**Error:** ${err.message}`);
+      setStatus('Error – check keys / Ollama', 'error');
+    }
+
+    isLoading = false;
+    document.getElementById('sendBtn').disabled = false;
+    input.focus();
+  }
+</script>
+</body>
+</html>
