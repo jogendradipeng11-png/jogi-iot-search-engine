@@ -303,18 +303,18 @@
     <div class="settings">
       <label>Backend</label>
       <select id="backend" onchange="saveSettings()">
-        <option value="ollama">Ollama (Recommended)</option>
-        <option value="nvidia">NVIDIA Multi-Key</option>
+        <option value="nvidia" selected>NVIDIA Multi-Key</option>
+        <option value="ollama">Ollama Local Only</option>
       </select>
 
-      <label>NVIDIA API Keys (one per line)</label>
-      <textarea id="apiKeys" placeholder="nvapi-xxxx&#10;nvapi-yyyy&#10;nvapi-zzzz" onchange="saveSettings()"></textarea>
+      <label>NVIDIA API Keys (hardcoded)</label>
+      <textarea id="apiKeys" readonly></textarea>
       <div class="key-status" id="keyStatus">0 keys loaded</div>
 
       <label>NVIDIA Model</label>
       <input type="text" id="model" value="meta/llama-3.1-70b-instruct" onchange="saveSettings()" />
 
-      <label>Ollama URL</label>
+      <label>Ollama URL (fallback)</label>
       <input type="text" id="ollamaUrl" value="http://localhost:11434" onchange="saveSettings()" />
 
       <label>Ollama Model</label>
@@ -327,15 +327,14 @@
       <h1>Jogi IoT Search Engine</h1>
       <div class="status">
         <div class="dot" id="statusDot"></div>
-        <span id="statusText">Ready</span>
+        <span id="statusText">Ready • Multi-key rotation</span>
       </div>
     </div>
 
     <div class="chat-container" id="chat">
       <div class="empty" id="empty">
         <h2>Jogi IoT Search Engine</h2>
-        <p>Private • Unlimited AI Search<br>
-           Best with Ollama (local)</p>
+        <p>Private • Unlimited • Multi-Key NVIDIA Rotation</p>
       </div>
     </div>
 
@@ -358,6 +357,14 @@
   </div>
 
 <script>
+  // ========== HARDCODED NVIDIA KEYS ==========
+  // Replace these with your real keys
+  const HARDCODED_KEYS = [
+    "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",
+    "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"
+  ];
+  // ==========================================
+
   // ========== SAFE STORAGE ==========
   const memoryStore = {};
 
@@ -388,8 +395,11 @@
 
   // ========== SETTINGS ==========
   function loadSettings() {
-    document.getElementById('backend').value = safeGet('jogi_backend', 'ollama');
-    document.getElementById('apiKeys').value = safeGet('jogi_keys', '');
+    document.getElementById('backend').value = safeGet('jogi_backend', 'nvidia');
+    
+    // Load hardcoded keys
+    document.getElementById('apiKeys').value = HARDCODED_KEYS.join('\n');
+    
     document.getElementById('model').value = safeGet('jogi_model', 'meta/llama-3.1-70b-instruct');
     document.getElementById('ollamaUrl').value = safeGet('jogi_ollama', 'http://localhost:11434');
     document.getElementById('ollamaModel').value = safeGet('jogi_ollama_model', 'qwen2.5-coder:14b');
@@ -398,7 +408,6 @@
 
   function saveSettings() {
     safeSet('jogi_backend', document.getElementById('backend').value);
-    safeSet('jogi_keys', document.getElementById('apiKeys').value);
     safeSet('jogi_model', document.getElementById('model').value);
     safeSet('jogi_ollama', document.getElementById('ollamaUrl').value);
     safeSet('jogi_ollama_model', document.getElementById('ollamaModel').value);
@@ -406,11 +415,8 @@
   }
 
   function updateKeys() {
-    const raw = document.getElementById('apiKeys').value;
-    keys = raw.split('\n')
-      .map(k => k.trim())
-      .filter(k => k.startsWith('nvapi-') || k.length > 20);
-    document.getElementById('keyStatus').textContent = `${keys.length} key${keys.length !== 1 ? 's' : ''} loaded`;
+    keys = HARDCODED_KEYS.filter(k => k && k.startsWith('nvapi-'));
+    document.getElementById('keyStatus').textContent = `${keys.length} key${keys.length !== 1 ? 's' : ''} hardcoded • Rotation ready`;
   }
 
   loadSettings();
@@ -421,8 +427,7 @@
     document.getElementById('chat').innerHTML = `
       <div class="empty" id="empty">
         <h2>Jogi IoT Search Engine</h2>
-        <p>Private • Unlimited AI Search<br>
-           Best with Ollama (local)</p>
+        <p>Private • Unlimited • Multi-Key NVIDIA Rotation</p>
       </div>`;
   }
 
@@ -489,10 +494,10 @@
     if (type === 'error') dot.classList.add('error');
   }
 
-  // ========== NVIDIA (Direct - may fail due to CORS) ==========
+  // ========== NVIDIA WITH ROTATION ==========
   async function callNVIDIAWithRotation(prompt) {
     if (keys.length === 0) {
-      throw new Error('No NVIDIA API keys added.');
+      throw new Error('No valid NVIDIA API keys found in hardcoded list.');
     }
 
     const model = document.getElementById('model').value;
@@ -547,10 +552,10 @@
       }
     }
 
-    throw new Error(`All NVIDIA keys failed. Last error: ${lastError}. Tip: Use Ollama instead (recommended).`);
+    throw new Error(`All ${keys.length} NVIDIA keys failed. Last error: ${lastError}`);
   }
 
-  // ========== OLLAMA ==========
+  // ========== OLLAMA FALLBACK ==========
   async function callOllama(prompt) {
     const url = document.getElementById('ollamaUrl').value.replace(/\/$/, '') + '/api/chat';
     const model = document.getElementById('ollamaModel').value;
@@ -561,7 +566,7 @@
       body: JSON.stringify({
         model: model,
         messages: [
-          { role: 'system', content: 'You are Jogi IoT Search Engine – expert in coding and IoT. Give clear answers with code examples.' },
+          { role: 'system', content: 'You are Jogi IoT Search Engine – expert in coding and IoT.' },
           ...messages,
           { role: 'user', content: prompt }
         ],
@@ -569,7 +574,7 @@
       })
     });
 
-    if (!res.ok) throw new Error('Ollama error ' + res.status + '. Make sure Ollama is running.');
+    if (!res.ok) throw new Error('Ollama error ' + res.status);
     const data = await res.json();
     return data.message.content;
   }
@@ -599,7 +604,7 @@
         } catch (nvidiaErr) {
           setStatus('NVIDIA failed → trying Ollama...', 'warning');
           reply = await callOllama(text);
-          setStatus('Ollama active', 'ok');
+          setStatus('Ollama fallback active', 'ok');
         }
       } else {
         reply = await callOllama(text);
@@ -608,7 +613,7 @@
       removeTyping();
       addMessage('assistant', reply);
       messages.push({ role: 'assistant', content: reply });
-      setStatus('Ready', 'ok');
+      setStatus('Ready • Multi-key rotation', 'ok');
 
     } catch (err) {
       removeTyping();
