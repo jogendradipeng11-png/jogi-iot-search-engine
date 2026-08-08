@@ -532,10 +532,10 @@
       <label>Default model (for NVIDIA + pool lines without one)</label>
       <input type="text" id="model" placeholder="meta/llama-3.3-70b-instruct" onchange="saveSettings()" />
 
-      <label>NVIDIA API keys — one per line (up to 10)</label>
+      <label>NVIDIA API keys — one per line (up to 10). Leave ALL empty if keys are in the Worker secret.</label>
       <textarea id="nvidiaKeys" placeholder="nvapi-xxxxxxxx&#10;nvapi-yyyyyyyy" spellcheck="false" onchange="saveSettings()"></textarea>
 
-      <label>More free APIs — one per line: provider | key | model?</label>
+      <label>More free APIs — one per line: provider | key | model? (Or leave empty — worker handles keys)</label>
       <textarea id="pool" placeholder="Just paste keys — auto-detected:&#10;nvapi-xxxxx (NVIDIA)&#10;gsk_xxxxx (Groq)&#10;AIza_xxxxx (Gemini)&#10;or with model: groq | gsk_xxxxx | model" spellcheck="false" onchange="saveSettings()"></textarea>
 
       <div id="keyList"></div>
@@ -571,7 +571,7 @@
     <div class="chat-container" id="chat">
       <div class="empty" id="empty">
         <h2>Ask anything — code, IoT, docs</h2>
-        <p>Add free API keys in the sidebar — NVIDIA, Groq, Gemini, OpenRouter, Mistral, Cerebras and more. The engine rotates across all of them: when one hits its quota, the next answers. Paste keys, ask, repeat — without stopping.</p>
+        <p>Add free API keys in the sidebar — or leave empty and set Proxy URL to a Cloudflare Worker with JOGI_KEYS secret. The engine rotates across all APIs: when one hits its quota, the next answers. Paste keys, ask, repeat — without stopping.</p>
       </div>
     </div>
 
@@ -1071,7 +1071,7 @@ _AI image: ' + p + '_');
     $('chat').innerHTML = `
       <div class="empty" id="empty">
         <h2>Ask anything — code, IoT, docs</h2>
-        <p>Add free API keys in the sidebar — NVIDIA, Groq, Gemini, OpenRouter, Mistral, Cerebras and more. The engine rotates across all of them: when one hits its quota, the next answers. Paste keys, ask, repeat — without stopping.</p>
+        <p>Add free API keys in the sidebar — or leave empty and set Proxy URL to a Cloudflare Worker with JOGI_KEYS secret. The engine rotates across all APIs: when one hits its quota, the next answers. Paste keys, ask, repeat — without stopping.</p>
       </div>`;
   }
 
@@ -1206,12 +1206,57 @@ _AI image: ' + p + '_');
   }
 
   async function callPool(prompt, onToken, image) {
-    if (!pool.length) {
-      throw new Error('Add at least one API in the sidebar — NVIDIA keys and/or pool lines like: groq | gsk_... (see README).');
-    }
-
     const proxyBase = $('proxyUrl').value.trim().replace(/\/+$/, '');
     const endpoint = proxyBase || '/api';
+    const hasClientKeys = pool.length > 0 && pool.some(e => !e.server);
+
+    // Server-keys-only mode: no client keys, but proxy is set
+    if (!pool.length && !proxyBase) {
+      throw new Error('Add at least one API in the sidebar — or set Proxy URL to a worker with JOGI_KEYS secret.');
+    }
+
+    // If only server keys exist (or no client keys but proxy set), send single request to worker
+    if ((!hasClientKeys && proxyBase) || (pool.length > 0 && pool.every(e => e.server))) {
+      updateStatus('Thinking • worker pool');
+      let res;
+      try {
+        res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: $('model').value.trim() || DEFAULT_MODEL,
+            messages: [
+              { role: 'system', content: 'You are Jogi IoT Search Engine, an expert coding and IoT assistant. Give clear, practical answers with code examples. Format code with markdown.' },
+              ...messages,
+              { role: 'user', content: image ? [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: image } }] : prompt }
+            ],
+            temperature: 0.2,
+            max_tokens: 2048,
+            stream: true
+          })
+        });
+      } catch (netErr) {
+        throw new Error(`Failed to reach proxy at ${endpoint} — check the URL and that the worker is deployed.`);
+      }
+
+      if (res.ok) {
+        return await readSSE(res, onToken);
+      }
+
+      let detail = '';
+      try {
+        const j = await res.json();
+        detail = j.error || j.detail || j.message || JSON.stringify(j);
+      } catch (e) { detail = res.statusText; }
+
+      if (res.status === 404) {
+        throw new Error('No proxy at ' + endpoint + '. Check your Worker URL.');
+      }
+      if (res.status === 429 || res.status === 503) {
+        throw new Error('All worker keys are rate-limited. They auto-recover after cooldown.');
+      }
+      throw new Error(`Worker error ${res.status}: ${detail}`);
+    }
 
     let lastErr = null;
 
@@ -1266,8 +1311,8 @@ _AI image: ' + p + '_');
         detail = (j.error && j.error.message) || j.detail || j.message || JSON.stringify(j);
       } catch (err) { detail = res.statusText; }
 
-      if (res.status === 404 && !proxyBase) {
-        throw new Error('No proxy at /api on this host. Open the app via your workers.dev URL, or set Proxy URL (sidebar) to your Cloudflare Worker address.');
+      if (res.status === 404) {
+        throw new Error('No proxy at ' + endpoint + '. Check your Worker URL or deploy the worker with /api route.');
       }
 
       if (res.status === 429) {
