@@ -39,7 +39,6 @@
       overflow: hidden;
     }
 
-    /* Sidebar */
     .sidebar {
       width: 290px;
       background: var(--sidebar);
@@ -186,7 +185,6 @@
     }
     .reset-btn:hover { color: var(--text); border-color: var(--accent); }
 
-    /* Main area */
     .main {
       flex: 1;
       display: flex;
@@ -285,7 +283,6 @@
     .content p { margin-bottom: 10px; }
     .content p:last-child { margin-bottom: 0; }
 
-    /* Input area */
     .input-area {
       padding: 16px 24px 24px;
       border-top: 1px solid var(--border);
@@ -359,7 +356,6 @@
       color: var(--text);
     }
 
-    /* Loading */
     .typing {
       display: flex;
       gap: 4px;
@@ -380,7 +376,6 @@
       40% { transform: scale(1); }
     }
 
-    /* Empty state */
     .empty {
       flex: 1;
       display: flex;
@@ -398,7 +393,6 @@
     }
     .empty p { max-width: 480px; line-height: 1.6; }
 
-    /* Copy buttons */
     .msg-actions { margin-top: 8px; text-align: right; }
     .copy-btn {
       background: var(--card);
@@ -413,7 +407,6 @@
     .copy-btn:hover { color: var(--text); border-color: var(--accent); }
     .code-copy { position: absolute; top: 6px; right: 6px; }
 
-    /* Install banner */
     .install-bar {
       display: none;
       align-items: center;
@@ -448,7 +441,6 @@
       line-height: 1;
     }
 
-    /* Attach / toolbar */
     .attach-btn, .mic-btn {
       position: absolute;
       bottom: 10px;
@@ -503,7 +495,6 @@
 
     .content img { max-width: 100%; border-radius: 8px; margin: 8px 0; }
 
-    /* Light theme */
     body.light {
       --bg: #f6f8fa;
       --sidebar: #ffffff;
@@ -522,7 +513,6 @@
 </head>
 <body>
 
-  <!-- Sidebar -->
   <div class="sidebar">
     <div class="logo">⚡ Jogi <span>IoT</span></div>
     <div class="tagline">Search Engine • rotates ALL your free APIs • no hard limits</div>
@@ -559,7 +549,6 @@
     </div>
   </div>
 
-  <!-- Main -->
   <div class="main">
     <div class="header">
       <h1>⚡ Jogi IoT Search Engine</h1>
@@ -610,17 +599,14 @@
   </div>
 
 <script>
-  // ============ STATE ============
   let messages = [];
   let isLoading = false;
-  let pool = [];             // [{id, label, key, model, target, requests, state, exhaustedUntil}]
+  let pool = [];
   let currentIndex = -1;
   const MAX_NVIDIA_KEYS = 10;
-  const COOLDOWN_MS = 10 * 60 * 1000; // retry a rate-limited API after 10 min
+  const COOLDOWN_MS = 10 * 60 * 1000;
   const DEFAULT_MODEL = 'meta/llama-3.3-70b-instruct';
 
-  // Known free providers — preset name → endpoint + default model.
-  // All traffic goes through your Cloudflare Worker (it whitelists these hosts).
   const PRESETS = {
     nvidia:      { name: 'NVIDIA',      base: '', model: DEFAULT_MODEL },
     groq:        { name: 'Groq',        base: 'https://api.groq.com/openai/v1/chat/completions',                              model: 'llama-3.3-70b-versatile' },
@@ -638,10 +624,9 @@
 
   const $ = id => document.getElementById(id);
 
-  // ============ SETTINGS ============
   function loadSettings() {
     let b = localStorage.getItem('jogiBackend') || 'pool';
-    if (b === 'nvidia' || b === 'custom') b = 'pool'; // migrate from older versions
+    if (b === 'nvidia' || b === 'custom') b = 'pool';
     $('backend').value   = b;
     $('model').value     = localStorage.getItem('jogiModel')     || DEFAULT_MODEL;
     $('nvidiaKeys').value = localStorage.getItem('jogiKeys')     || '';
@@ -662,9 +647,6 @@
     updateStatus('Ready • ' + poolSummary());
   }
 
-  // ============ API POOL ============
-  // Detect a bare API key's provider from its prefix — so you can paste
-  // keys with NO format at all: nvapi-…, gsk_…, AIza…, sk-or-…, hf_…, ghp_…, csk-…
   function detectPreset(k) {
     if (/^nvapi-/.test(k)) return 'nvidia';
     if (/^gsk_/.test(k)) return 'groq';
@@ -690,19 +672,14 @@
       const key = parts[1] || '';
       return { id: parts[0] + '|' + key, label: host, key, model: parts[2] || $('model').value.trim() || DEFAULT_MODEL, target: parts[0] };
     }
-    // Bare key (no pipes) — detect the provider from the key prefix
     const g = detectPreset(line);
     if (g) {
       const p = PRESETS[g];
       return { id: p.name + '|' + line, label: p.name, key: line, model: p.model, target: p.base || null };
     }
-    return null; // unrecognized line — skipped
+    return null;
   }
 
-  // Permanent server-side keys (optional): the worker holds them in the
-  // JOGI_KEYS secret (Cloudflare dashboard). GET /api/keys returns a masked
-  // list; these entries send no client key — the worker injects it server-side,
-  // so the app works on ANY device, anywhere, with zero key entry.
   let serverEntries = [];
 
   async function loadServerKeys() {
@@ -723,20 +700,22 @@
         requests: 0, state: 'active', exhaustedUntil: 0
       }));
       buildPool();
-    } catch (e) { /* no worker / endpoint unavailable — client keys only */ }
+    } catch (e) { }
   }
 
   function buildPool() {
     const model = $('model').value.trim() || DEFAULT_MODEL;
     const entries = $('nvidiaKeys').value
-      .split(/[\n,;]+/)
+      .split(/[
+,;]+/)
       .map(s => s.trim())
       .filter(Boolean)
       .slice(0, MAX_NVIDIA_KEYS)
       .map(k => ({ id: 'NVIDIA|' + k, label: 'NVIDIA', key: k, model, target: null }));
 
     $('pool').value
-      .split('\n')
+      .split('
+')
       .map(s => s.trim())
       .filter(l => l && !l.startsWith('#'))
       .forEach(line => {
@@ -744,14 +723,13 @@
         if (e) entries.push(e);
       });
 
-    // Permanent server-side keys (if the worker has JOGI_KEYS configured)
     serverEntries.forEach(e => entries.push(e));
 
     let saved = {};
     try { saved = JSON.parse(localStorage.getItem('jogiKeyStates') || '{}'); } catch (e) {}
 
     pool = entries.map(e => {
-      const prev = saved[e.id] || saved[e.key]; // saved[e.key] = migrate old NVIDIA-only format
+      const prev = saved[e.id] || saved[e.key];
       return Object.assign(e, prev
         ? { requests: prev.requests || 0, state: prev.state || 'active', exhaustedUntil: prev.exhaustedUntil || 0 }
         : { requests: 0, state: 'active', exhaustedUntil: 0 });
@@ -774,7 +752,6 @@
     return true;
   }
 
-  // Round-robin: advance past unusable entries, return next usable one
   function pickNextEntry() {
     if (!pool.length) return null;
     for (let i = 0; i < pool.length; i++) {
@@ -821,7 +798,6 @@
     return `api ${Math.max(currentIndex, 0) + 1}/${pool.length} • ${reqs} req • ${cooling} cooling`;
   }
 
-  // ============ HISTORY (last searches) ============
   let conversations = [];
   let activeChatId = null;
   try { conversations = JSON.parse(localStorage.getItem('jogiChats') || '[]'); } catch (e) {}
@@ -836,11 +812,13 @@
 
   function renderHistory() {
     const el = $('history');
+    const term = ($('histSearch').value || '').toLowerCase();
     if (!conversations.length) {
       el.innerHTML = '<div style="color:var(--muted);font-size:0.78rem;padding:4px">No searches yet</div>';
       return;
     }
-    el.innerHTML = conversations.slice().reverse().map(c =>
+    const filtered = conversations.filter(c => !term || c.title.toLowerCase().includes(term));
+    el.innerHTML = filtered.slice().reverse().map(c =>
       `<div class="history-item ${c.id === activeChatId ? 'active' : ''}" onclick="loadChat(${c.id})" title="${esc(c.title)}">🔎 ${esc(c.title)}</div>`
     ).join('');
   }
@@ -852,7 +830,7 @@
       if (conversations.length > 30) conversations = conversations.slice(-30);
     }
     const conv = conversations.find(c => c.id === activeChatId);
-    if (conv) conv.messages = messages.slice(-40); // cap stored history
+    if (conv) conv.messages = messages.slice(-40);
     saveChats();
     renderHistory();
   }
@@ -868,9 +846,8 @@
     renderHistory();
   }
 
-  // ============ ATTACH: IMAGES & DOCUMENTS ============
-  let pendingImage = null; // {name, dataUrl}
-  let attachedDocs = [];   // [{name, text}]
+  let pendingImage = null;
+  let attachedDocs = [];
 
   function loadImageFile(file, cb) {
     const reader = new FileReader();
@@ -921,7 +898,6 @@
   function removeAttach() { pendingImage = null; renderAttachRow(); }
   function removeDoc(i) { attachedDocs.splice(i, 1); renderAttachRow(); }
 
-  // ============ VOICE INPUT ============
   function startVoice() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { alert('Voice input needs Chrome or Edge (Android or desktop).'); return; }
@@ -935,7 +911,6 @@
     rec.start();
   }
 
-  // ============ THEME ============
   function toggleTheme() {
     document.body.classList.toggle('light');
     const light = document.body.classList.contains('light');
@@ -943,10 +918,8 @@
     $('themeBtn').textContent = light ? '☀️' : '🌙';
   }
 
-  // ============ IMAGE GENERATION ============
   async function generateImageFromInput() {
     const prompt = $('input').value.trim();
-    if (!prompt) { setHint(''); $('input').value = ''; }
     const p = prompt || 'A beautiful futuristic IoT city at night, neon lights';
     if (!prompt) $('input').value = p;
     if (isLoading) return;
@@ -971,7 +944,9 @@
       if (!res.ok || !data.image) throw new Error(data.error || ('Image generation failed (' + res.status + ')'));
       const url = 'data:image/png;base64,' + data.image;
       removeTyping();
-      addMessage('assistant', '![generated](' + url + ')\n\n_AI image: ' + p + '_');
+      addMessage('assistant', '![generated](' + url + ')
+
+_AI image: ' + p + '_');
       messages.push({ role: 'assistant', content: '![generated](' + url + ')' });
       trackConversation();
       updateStatus('Ready • ' + poolSummary());
@@ -985,11 +960,10 @@
     $('sendBtn').disabled = false;
   }
 
-  // ============ SPEECH & MELODY (the app sings!) ============
   let audioCtx = null;
   let melodyTimer = null;
   let speaking = false;
-  const MELODY = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 440.0, 392.0]; // C D E G A C A G
+  const MELODY = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 440.0, 392.0];
 
   function speakText(rawText, btn) {
     if (!('speechSynthesis' in window)) return;
@@ -1033,7 +1007,6 @@
     if (melodyTimer) { clearInterval(melodyTimer); melodyTimer = null; }
   }
 
-  // ============ COPY BUTTONS ============
   function addCopyButtons(container, rawText) {
     if (!container || container.querySelector('.msg-actions')) return;
     const bar = document.createElement('div');
@@ -1087,7 +1060,6 @@
     });
   }
 
-  // ============ UI HELPERS ============
   function updateStatus(text) {
     $('statusText').textContent = text;
   }
@@ -1160,7 +1132,6 @@
     if (t) t.remove();
   }
 
-  // ============ STREAMING UI ============
   function addStreamingMessage() {
     const empty = $('empty');
     if (empty) empty.remove();
@@ -1183,7 +1154,6 @@
     addCopyButtons(el, rawText);
   }
 
-  // ============ API CALLS ============
   async function callOllama(prompt) {
     const url = $('ollamaUrl').value.replace(/\/$/, '') + '/api/chat';
     const model = $('model').value;
@@ -1207,7 +1177,6 @@
     return data.message.content;
   }
 
-  // Shared SSE reader — works with any OpenAI-compatible streaming endpoint
   async function readSSE(res, onToken) {
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -1217,8 +1186,9 @@
       const { done, value } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || ''; // keep incomplete line for next chunk
+      const lines = buffer.split('
+');
+      buffer = lines.pop() || '';
       for (const line of lines) {
         const t = line.trim();
         if (!t.startsWith('data:')) continue;
@@ -1228,16 +1198,14 @@
           const j = JSON.parse(payload);
           const delta = (j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content) || '';
           if (delta) { full += delta; if (onToken) onToken(full); }
-        } catch (e) { /* ignore unparseable keep-alive lines */ }
+        } catch (e) { }
       }
     }
     if (!full) throw new Error('Empty response — try again.');
     return full;
   }
 
-  // Rotate across the whole pool — NVIDIA keys + every extra API line.
-  // All calls go through your Cloudflare Worker (adds CORS headers, whitelists hosts).
-  async function callPool(prompt, onToken) {
+  async function callPool(prompt, onToken, image) {
     if (!pool.length) {
       throw new Error('Add at least one API in the sidebar — NVIDIA keys and/or pool lines like: groq | gsk_... (see README).');
     }
@@ -1247,7 +1215,6 @@
 
     let lastErr = null;
 
-    // Try every pool entry at most once per request — rotating past exhausted ones
     for (let attempt = 0; attempt < pool.length; attempt++) {
       const e = pickNextEntry();
       if (!e) break;
@@ -1281,7 +1248,7 @@
             ? `Failed to reach proxy at ${endpoint} — check the URL and that the worker is deployed.`
             : `Failed to reach ${endpoint} — hard-refresh (Ctrl+Shift+R). If this is GitHub Pages, set Proxy URL (sidebar) to your Cloudflare Worker address.`
         );
-        continue; // try next entry
+        continue;
       }
 
       if (res.ok) {
@@ -1304,7 +1271,6 @@
       }
 
       if (res.status === 429) {
-        // Quota / rate limit hit → cool this entry down and rotate
         e.state = 'limited';
         e.exhaustedUntil = Date.now() + COOLDOWN_MS;
         persistPool();
@@ -1322,7 +1288,6 @@
       }
 
       if (res.status === 400 || res.status === 402 || res.status === 404) {
-        // Bad model name, payment required, or unknown endpoint on THIS entry
         e.state = 'invalid';
         persistPool();
         renderPoolList();
@@ -1332,7 +1297,7 @@
 
       if (res.status >= 500) {
         lastErr = new Error(`${e.label}: server error ${res.status} — trying next.`);
-        continue; // transient — try next entry
+        continue;
       }
 
       throw new Error(`${e.label} error ${res.status}: ${detail}`);
@@ -1341,19 +1306,17 @@
     throw lastErr || new Error('No usable APIs right now. Wait for cooldown or press "↻ Reset API states".');
   }
 
-  // ============ SEND ============
   async function sendMessage() {
     const input = $('input');
     const text = input.value.trim();
     if (!text || isLoading) return;
 
-    saveSettings(); // grab latest keys/settings even if a field never lost focus
+    saveSettings();
 
     isLoading = true;
     $('sendBtn').disabled = true;
     input.value = '';
 
-    // unlock audio inside the user gesture so the app can sing
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
@@ -1363,13 +1326,14 @@
     messages.push({ role: 'user', content: text });
     trackConversation(text);
 
-    // Attached documents become user messages (before the question)
     if (attachedDocs.length) {
       const docs = attachedDocs.slice();
       attachedDocs = [];
       renderAttachRow();
       docs.forEach(d => {
-        const m = '[📄 ' + d.name + ']\n\n' + d.text;
+        const m = '[📄 ' + d.name + ']
+
+' + d.text;
         addMessage('user', m);
         messages.push({ role: 'user', content: m });
       });
@@ -1403,7 +1367,6 @@
       messages.push({ role: 'assistant', content: reply });
       trackConversation();
 
-      // 🎵 "sing me a song" → the app sings the answer
       if (/sing|song|music|melody|tune/i.test(text)) {
         playMelody();
         speakText(reply);
@@ -1425,24 +1388,20 @@
     input.focus();
   }
 
-  // ============ INIT ============
   loadSettings();
   renderHistory();
-  loadServerKeys(); // permanent server-side keys from the worker secret
+  loadServerKeys();
   updateStatus('Ready • ' + poolSummary());
 
-  // PWA: installable app shell with offline cache
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 
-  // ============ INSTALL PROMPT (auto banner) ============
   let deferredPrompt = null;
 
   function showInstallBar() { $('installBar').classList.add('show'); }
   function hideInstallBar() { $('installBar').classList.remove('show'); }
 
-  // Browser fires this when the app is installable — we show our own banner
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
@@ -1451,7 +1410,7 @@
 
   $('installBtn').onclick = async () => {
     if (!deferredPrompt) return;
-    deferredPrompt.prompt();          // the real install dialog
+    deferredPrompt.prompt();
     await deferredPrompt.userChoice;
     deferredPrompt = null;
     hideInstallBar();
@@ -1459,12 +1418,10 @@
 
   window.addEventListener('appinstalled', () => hideInstallBar());
 
-  // Already running as an installed app → never show the banner
   if (window.matchMedia('(display-mode: standalone)').matches) {
     hideInstallBar();
   }
 
-  // iOS: no install prompt API — show how-to instructions instead
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   if (isIOS && !window.matchMedia('(display-mode: standalone)').matches) {
