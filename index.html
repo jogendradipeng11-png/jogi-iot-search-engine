@@ -35,7 +35,7 @@
 
     /* Sidebar */
     .sidebar {
-      width: 280px;
+      width: 290px;
       background: var(--sidebar);
       border-right: 1px solid var(--border);
       display: flex;
@@ -55,7 +55,7 @@
     .tagline {
       font-size: 0.72rem;
       color: var(--muted);
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
 
     .new-chat {
@@ -66,7 +66,7 @@
       border-radius: 8px;
       font-weight: 600;
       cursor: pointer;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       transition: 0.2s;
     }
     .new-chat:hover { background: var(--accent-hover); }
@@ -75,7 +75,7 @@
       flex: 1;
       overflow-y: auto;
       font-size: 0.9rem;
-      min-height: 40px;
+      min-height: 30px;
     }
 
     .history-item {
@@ -98,7 +98,7 @@
       padding-top: 14px;
       font-size: 0.85rem;
       overflow-y: auto;
-      max-height: 55vh;
+      max-height: 62vh;
     }
 
     .settings label {
@@ -125,7 +125,7 @@
       padding: 8px;
       border-radius: 6px;
       margin-bottom: 8px;
-      min-height: 72px;
+      min-height: 64px;
       max-height: 130px;
       font-size: 0.72rem;
       font-family: "SF Mono", Consolas, monospace;
@@ -136,7 +136,7 @@
     #keyList {
       font-size: 0.74rem;
       margin-bottom: 10px;
-      max-height: 150px;
+      max-height: 160px;
       overflow-y: auto;
     }
     .krow {
@@ -147,16 +147,24 @@
       color: var(--muted);
       font-family: "SF Mono", Consolas, monospace;
     }
+    .krow .kmodel {
+      opacity: 0.6;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 90px;
+    }
     .kb {
       padding: 1px 7px;
       border-radius: 10px;
       font-size: 0.64rem;
       font-weight: 600;
+      flex-shrink: 0;
     }
     .kb.ok { background: #23863633; color: var(--success); }
     .kb.limited { background: #d2992233; color: #d29922; }
     .kb.invalid { background: #f8514933; color: #f85149; }
-    .kreq { margin-left: auto; }
+    .kreq { margin-left: auto; flex-shrink: 0; }
 
     .reset-btn {
       width: 100%;
@@ -382,7 +390,7 @@
       color: var(--text);
       margin-bottom: 12px;
     }
-    .empty p { max-width: 460px; line-height: 1.6; }
+    .empty p { max-width: 480px; line-height: 1.6; }
 
     @media (max-width: 768px) {
       .sidebar { display: none; }
@@ -394,7 +402,7 @@
   <!-- Sidebar -->
   <div class="sidebar">
     <div class="logo">⚡ Jogi <span>IoT</span></div>
-    <div class="tagline">Search Engine • rotating NVIDIA keys • no hard limits</div>
+    <div class="tagline">Search Engine • rotates ALL your free APIs • no hard limits</div>
     <button class="new-chat" onclick="newChat()">+ New Search</button>
 
     <div class="history" id="history"></div>
@@ -402,18 +410,21 @@
     <div class="settings">
       <label>Backend</label>
       <select id="backend" onchange="saveSettings()">
-        <option value="nvidia">NVIDIA NIM (key rotation)</option>
+        <option value="pool">All APIs (auto-rotate)</option>
         <option value="ollama">Ollama (Local)</option>
       </select>
 
-      <label>Model</label>
+      <label>Default model (for NVIDIA + pool lines without one)</label>
       <input type="text" id="model" placeholder="meta/llama-3.3-70b-instruct" onchange="saveSettings()" />
 
-      <label>NVIDIA API Keys (up to 10, one per line)</label>
-      <textarea id="nvidiaKeys" placeholder="nvapi-xxxxxxxx&#10;nvapi-yyyyyyyy&#10;nvapi-zzzzzzzz" spellcheck="false" onchange="saveSettings()"></textarea>
+      <label>NVIDIA API keys — one per line (up to 10)</label>
+      <textarea id="nvidiaKeys" placeholder="nvapi-xxxxxxxx&#10;nvapi-yyyyyyyy" spellcheck="false" onchange="saveSettings()"></textarea>
+
+      <label>More free APIs — one per line: provider | key | model?</label>
+      <textarea id="pool" placeholder="groq | gsk_xxxxx&#10;gemini | AIza_xxxxx&#10;openrouter | sk-or-xxxxx | meta-llama/llama-3.3-70b-instruct:free&#10;mistral | xxxxx | mistral-small-latest" spellcheck="false" onchange="saveSettings()"></textarea>
 
       <div id="keyList"></div>
-      <button class="reset-btn" onclick="resetKeys()">↻ Reset key states</button>
+      <button class="reset-btn" onclick="resetPool()">↻ Reset API states</button>
 
       <label>Proxy URL (leave empty on the Cloudflare app — auto /api)</label>
       <input type="text" id="proxyUrl" placeholder="empty = /api (auto)" onchange="saveSettings()" />
@@ -436,7 +447,7 @@
     <div class="chat-container" id="chat">
       <div class="empty" id="empty">
         <h2>Ask anything — code, IoT, docs</h2>
-        <p>Powered by rotating free NVIDIA NIM keys. When one key hits its quota, the engine automatically rotates to the next one. Paste up to 10 keys in the sidebar and search without stopping.</p>
+        <p>Add free API keys in the sidebar — NVIDIA, Groq, Gemini, OpenRouter, Mistral, Cerebras and more. The engine rotates across all of them: when one hits its quota, the next answers. Paste keys, ask, repeat — without stopping.</p>
       </div>
     </div>
 
@@ -462,106 +473,162 @@
   // ============ STATE ============
   let messages = [];
   let isLoading = false;
-  let keyStates = [];        // [{key, requests, state, exhaustedUntil}]
-  let currentKeyIndex = -1;
-  const MAX_KEYS = 10;
-  const COOLDOWN_MS = 10 * 60 * 1000; // retry a rate-limited key after 10 min
+  let pool = [];             // [{id, label, key, model, target, requests, state, exhaustedUntil}]
+  let currentIndex = -1;
+  const MAX_NVIDIA_KEYS = 10;
+  const COOLDOWN_MS = 10 * 60 * 1000; // retry a rate-limited API after 10 min
+  const DEFAULT_MODEL = 'meta/llama-3.3-70b-instruct';
+
+  // Known free providers — preset name → endpoint + default model.
+  // All traffic goes through your Cloudflare Worker (it whitelists these hosts).
+  const PRESETS = {
+    nvidia:      { name: 'NVIDIA',      base: '', model: DEFAULT_MODEL },
+    groq:        { name: 'Groq',        base: 'https://api.groq.com/openai/v1/chat/completions',                              model: 'llama-3.3-70b-versatile' },
+    gemini:      { name: 'Gemini',      base: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',     model: 'gemini-2.0-flash' },
+    openrouter:  { name: 'OpenRouter',  base: 'https://openrouter.ai/api/v1/chat/completions',                                model: 'meta-llama/llama-3.3-70b-instruct:free' },
+    mistral:     { name: 'Mistral',     base: 'https://api.mistral.ai/v1/chat/completions',                                   model: 'mistral-small-latest' },
+    cerebras:    { name: 'Cerebras',    base: 'https://api.cerebras.ai/v1/chat/completions',                                  model: 'llama-3.3-70b' },
+    sambanova:   { name: 'SambaNova',   base: 'https://api.sambanova.ai/v1/chat/completions',                                 model: 'Meta-Llama-3.3-70B-Instruct' },
+    together:    { name: 'Together',    base: 'https://api.together.xyz/v1/chat/completions',                                 model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free' },
+    github:      { name: 'GitHub',      base: 'https://models.github.ai/inference/chat/completions',                          model: 'openai/gpt-4o-mini' },
+    huggingface: { name: 'HuggingFace', base: 'https://router.huggingface.co/v1/chat/completions',                            model: 'meta-llama/Llama-3.1-8B-Instruct' },
+    hf:          { name: 'HuggingFace', base: 'https://router.huggingface.co/v1/chat/completions',                            model: 'meta-llama/Llama-3.1-8B-Instruct' },
+    cohere:      { name: 'Cohere',      base: 'https://api.cohere.ai/compatibility/v1/chat/completions',                      model: 'command-r-plus' }
+  };
 
   const $ = id => document.getElementById(id);
 
   // ============ SETTINGS ============
   function loadSettings() {
-    $('backend').value   = localStorage.getItem('jogiBackend')   || 'nvidia';
-    $('model').value     = localStorage.getItem('jogiModel')     || 'meta/llama-3.3-70b-instruct';
+    let b = localStorage.getItem('jogiBackend') || 'pool';
+    if (b === 'nvidia' || b === 'custom') b = 'pool'; // migrate from older versions
+    $('backend').value   = b;
+    $('model').value     = localStorage.getItem('jogiModel')     || DEFAULT_MODEL;
     $('nvidiaKeys').value = localStorage.getItem('jogiKeys')     || '';
+    $('pool').value      = localStorage.getItem('jogiPool')      || '';
     $('proxyUrl').value  = localStorage.getItem('jogiProxyUrl')  || '';
     $('ollamaUrl').value = localStorage.getItem('jogiOllamaUrl') || 'http://localhost:11434';
-    loadKeyStates();
+    buildPool();
   }
 
   function saveSettings() {
     localStorage.setItem('jogiBackend',   $('backend').value);
     localStorage.setItem('jogiModel',     $('model').value);
     localStorage.setItem('jogiKeys',      $('nvidiaKeys').value);
+    localStorage.setItem('jogiPool',      $('pool').value);
     localStorage.setItem('jogiProxyUrl',  $('proxyUrl').value);
     localStorage.setItem('jogiOllamaUrl', $('ollamaUrl').value);
-    loadKeyStates();
-    updateStatus('Ready • ' + keySummary());
+    buildPool();
+    updateStatus('Ready • ' + poolSummary());
   }
 
-  // ============ KEY ROTATION ============
-  function loadKeyStates() {
-    const keys = $('nvidiaKeys').value
+  // ============ API POOL ============
+  function parsePoolLine(line) {
+    const parts = line.split('|').map(s => s.trim());
+    if (!parts[0]) return null;
+    const p = PRESETS[parts[0].toLowerCase()];
+    if (p) {
+      const key = parts[1] || '';
+      return { id: p.name + '|' + key + '|' + (parts[2] || ''), label: p.name, key, model: parts[2] || p.model, target: p.base || null };
+    }
+    if (/^https?:\/\//i.test(parts[0])) {
+      let host = 'custom';
+      try { host = new URL(parts[0]).hostname.replace(/^(api\.|www\.)/, ''); } catch (e) { return null; }
+      const key = parts[1] || '';
+      return { id: parts[0] + '|' + key, label: host, key, model: parts[2] || $('model').value.trim() || DEFAULT_MODEL, target: parts[0] };
+    }
+    return null; // unrecognized line — skipped
+  }
+
+  function buildPool() {
+    const model = $('model').value.trim() || DEFAULT_MODEL;
+    const entries = $('nvidiaKeys').value
       .split(/[\n,;]+/)
       .map(s => s.trim())
       .filter(Boolean)
-      .slice(0, MAX_KEYS);
+      .slice(0, MAX_NVIDIA_KEYS)
+      .map(k => ({ id: 'NVIDIA|' + k, label: 'NVIDIA', key: k, model, target: null }));
+
+    $('pool').value
+      .split('\n')
+      .map(s => s.trim())
+      .filter(l => l && !l.startsWith('#'))
+      .forEach(line => {
+        const e = parsePoolLine(line);
+        if (e) entries.push(e);
+      });
 
     let saved = {};
     try { saved = JSON.parse(localStorage.getItem('jogiKeyStates') || '{}'); } catch (e) {}
 
-    keyStates = keys.map(k => saved[k] || { key: k, requests: 0, state: 'active', exhaustedUntil: 0 });
-    if (currentKeyIndex >= keyStates.length) currentKeyIndex = -1;
-    persistKeyStates();
-    renderKeyList();
+    pool = entries.map(e => {
+      const prev = saved[e.id] || saved[e.key]; // saved[e.key] = migrate old NVIDIA-only format
+      return Object.assign(e, prev
+        ? { requests: prev.requests || 0, state: prev.state || 'active', exhaustedUntil: prev.exhaustedUntil || 0 }
+        : { requests: 0, state: 'active', exhaustedUntil: 0 });
+    });
+
+    if (currentIndex >= pool.length) currentIndex = -1;
+    persistPool();
+    renderPoolList();
   }
 
-  function persistKeyStates() {
+  function persistPool() {
     const obj = {};
-    keyStates.forEach(ks => { obj[ks.key] = ks; });
+    pool.forEach(e => { obj[e.id] = { requests: e.requests, state: e.state, exhaustedUntil: e.exhaustedUntil }; });
     localStorage.setItem('jogiKeyStates', JSON.stringify(obj));
   }
 
-  function keyUsable(ks) {
-    if (ks.state === 'invalid') return false;
-    if (ks.state === 'limited' && Date.now() < ks.exhaustedUntil) return false;
+  function entryUsable(e) {
+    if (e.state === 'invalid') return false;
+    if (e.state === 'limited' && Date.now() < e.exhaustedUntil) return false;
     return true;
   }
 
-  // Round-robin: advance past unusable keys, return next usable one
-  function pickNextKey() {
-    if (!keyStates.length) return null;
-    for (let i = 0; i < keyStates.length; i++) {
-      currentKeyIndex = (currentKeyIndex + 1) % keyStates.length;
-      const ks = keyStates[currentKeyIndex];
-      if (keyUsable(ks)) return ks;
+  // Round-robin: advance past unusable entries, return next usable one
+  function pickNextEntry() {
+    if (!pool.length) return null;
+    for (let i = 0; i < pool.length; i++) {
+      currentIndex = (currentIndex + 1) % pool.length;
+      const e = pool[currentIndex];
+      if (entryUsable(e)) return e;
     }
     return null;
   }
 
   function maskKey(k) {
-    return k.length > 12 ? k.slice(0, 6) + '…' + k.slice(-4) : '****';
+    if (!k) return 'no-key';
+    return k.length > 8 ? '…' + k.slice(-4) : '…';
   }
 
-  function renderKeyList() {
+  function renderPoolList() {
     const el = $('keyList');
-    if (!keyStates.length) {
-      el.innerHTML = '<div style="color:var(--muted);font-size:0.75rem;padding:2px 0">No NVIDIA keys saved — add up to 10 above.</div>';
+    if (!pool.length) {
+      el.innerHTML = '<div style="color:var(--muted);font-size:0.75rem;padding:2px 0">No APIs yet — add NVIDIA keys and/or pool lines above.</div>';
       return;
     }
-    el.innerHTML = keyStates.map((ks, i) => {
-      const usable = keyUsable(ks);
-      const badge = ks.state === 'invalid'
+    el.innerHTML = pool.map((e, i) => {
+      const usable = entryUsable(e);
+      const badge = e.state === 'invalid'
         ? '<span class="kb invalid">invalid</span>'
         : (!usable ? '<span class="kb limited">cooldown</span>' : '<span class="kb ok">active</span>');
-      const cur = i === currentKeyIndex ? ' ◄' : '';
-      return `<div class="krow">#${i + 1} ${maskKey(ks.key)} ${badge}<span class="kreq">${ks.requests} req${cur}</span></div>`;
+      const cur = i === currentIndex ? ' ◄' : '';
+      return `<div class="krow" title="${e.model}">#${i + 1} ${e.label} ${maskKey(e.key)} <span class="kmodel">${e.model}</span> ${badge}<span class="kreq">${e.requests}${cur}</span></div>`;
     }).join('');
   }
 
-  function resetKeys() {
-    keyStates.forEach(ks => { ks.state = 'active'; ks.exhaustedUntil = 0; });
-    persistKeyStates();
-    renderKeyList();
-    updateStatus('Ready • ' + keySummary());
+  function resetPool() {
+    pool.forEach(e => { e.state = 'active'; e.exhaustedUntil = 0; });
+    persistPool();
+    renderPoolList();
+    updateStatus('Ready • ' + poolSummary());
   }
 
-  function keySummary() {
-    if (!keyStates.length) return 'add NVIDIA keys';
-    const total = keyStates.length;
-    const cooling = keyStates.filter(k => !keyUsable(k)).length;
-    const reqs = keyStates.reduce((a, k) => a + k.requests, 0);
-    return `key ${Math.max(currentKeyIndex, 0) + 1}/${total} • ${reqs} req • ${cooling} cooling`;
+  function poolSummary() {
+    if (!pool.length) return 'add APIs in sidebar';
+    const cooling = pool.filter(e => !entryUsable(e)).length;
+    const reqs = pool.reduce((a, e) => a + e.requests, 0);
+    return `api ${Math.max(currentIndex, 0) + 1}/${pool.length} • ${reqs} req • ${cooling} cooling`;
   }
 
   // ============ UI HELPERS ============
@@ -574,7 +641,7 @@
     $('chat').innerHTML = `
       <div class="empty" id="empty">
         <h2>Ask anything — code, IoT, docs</h2>
-        <p>Powered by rotating free NVIDIA NIM keys. When one key hits its quota, the engine automatically rotates to the next one. Paste up to 10 keys in the sidebar and search without stopping.</p>
+        <p>Add free API keys in the sidebar — NVIDIA, Groq, Gemini, OpenRouter, Mistral, Cerebras and more. The engine rotates across all of them: when one hits its quota, the next answers. Paste keys, ask, repeat — without stopping.</p>
       </div>`;
   }
 
@@ -680,36 +747,64 @@
     return data.message.content;
   }
 
-  async function callNVIDIA(prompt, onToken) {
-    if (!keyStates.length) {
-      throw new Error('Add at least one NVIDIA API key in the sidebar (up to 10). Get free keys at build.nvidia.com');
+  // Shared SSE reader — works with any OpenAI-compatible streaming endpoint
+  async function readSSE(res, onToken) {
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '', full = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || ''; // keep incomplete line for next chunk
+      for (const line of lines) {
+        const t = line.trim();
+        if (!t.startsWith('data:')) continue;
+        const payload = t.slice(5).trim();
+        if (!payload || payload === '[DONE]') continue;
+        try {
+          const j = JSON.parse(payload);
+          const delta = (j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content) || '';
+          if (delta) { full += delta; if (onToken) onToken(full); }
+        } catch (e) { /* ignore unparseable keep-alive lines */ }
+      }
+    }
+    if (!full) throw new Error('Empty response — try again.');
+    return full;
+  }
+
+  // Rotate across the whole pool — NVIDIA keys + every extra API line.
+  // All calls go through your Cloudflare Worker (adds CORS headers, whitelists hosts).
+  async function callPool(prompt, onToken) {
+    if (!pool.length) {
+      throw new Error('Add at least one API in the sidebar — NVIDIA keys and/or pool lines like: groq | gsk_... (see README).');
     }
 
-    // NVIDIA's API sends no CORS headers for public origins, so browsers block
-    // direct calls. Default: same-origin /api (the Cloudflare Worker proxies it).
-    // A Proxy URL in settings overrides this (needed on the GitHub Pages copy).
-    const proxy = $('proxyUrl').value.trim().replace(/\/+$/, '');
-    const endpoint = proxy || '/api';
+    const proxyBase = $('proxyUrl').value.trim().replace(/\/+$/, '');
+    const endpoint = proxyBase || '/api';
 
     let lastErr = null;
 
-    // Try every key at most once per request — rotating past exhausted ones
-    for (let attempt = 0; attempt < keyStates.length; attempt++) {
-      const ks = pickNextKey();
-      if (!ks) break;
+    // Try every pool entry at most once per request — rotating past exhausted ones
+    for (let attempt = 0; attempt < pool.length; attempt++) {
+      const e = pickNextEntry();
+      if (!e) break;
 
-      updateStatus(`Thinking • key ${currentKeyIndex + 1}/${keyStates.length}`);
+      updateStatus(`Thinking • ${e.label}`);
+
+      const headers = { 'Content-Type': 'application/json' };
+      if (e.key) headers['Authorization'] = 'Bearer ' + e.key;
+      if (e.target) headers['X-Proxy-Target'] = e.target;
 
       let res;
       try {
         res = await fetch(endpoint, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + ks.key
-          },
+          headers,
           body: JSON.stringify({
-            model: $('model').value || 'meta/llama-3.3-70b-instruct',
+            model: e.model,
             messages: [
               { role: 'system', content: 'You are Jogi IoT Search Engine, an expert coding and IoT assistant. Give clear, practical answers with code examples. Format code with markdown.' },
               ...messages,
@@ -722,89 +817,68 @@
         });
       } catch (netErr) {
         lastErr = new Error(
-          proxy
+          proxyBase
             ? `Failed to reach proxy at ${endpoint} — check the URL and that the worker is deployed.`
             : `Failed to reach ${endpoint} — hard-refresh (Ctrl+Shift+R). If this is GitHub Pages, set Proxy URL (sidebar) to your Cloudflare Worker address.`
         );
-        continue; // try next key
+        continue; // try next entry
       }
 
       if (res.ok) {
-        ks.requests++;
-        ks.state = 'active';
-        ks.exhaustedUntil = 0;
-        persistKeyStates();
-        renderKeyList();
-
-        // SSE streaming: read tokens as they arrive, render live
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        let full = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || ''; // keep incomplete line for next chunk
-          for (const line of lines) {
-            const t = line.trim();
-            if (!t.startsWith('data:')) continue;
-            const payload = t.slice(5).trim();
-            if (!payload || payload === '[DONE]') continue;
-            try {
-              const j = JSON.parse(payload);
-              const delta = (j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content) || '';
-              if (delta) {
-                full += delta;
-                if (onToken) onToken(full);
-              }
-            } catch (e) { /* ignore unparseable keep-alive lines */ }
-          }
-        }
-
-        if (!full) throw new Error('Empty response from NVIDIA — try again.');
-        return full;
-      }
-
-      if (res.status === 404 && !proxy) {
-        throw new Error('No proxy at /api on this host. If you are on GitHub Pages, set Proxy URL (sidebar) to your Cloudflare Worker address — then it works.');
+        e.requests++;
+        e.state = 'active';
+        e.exhaustedUntil = 0;
+        persistPool();
+        renderPoolList();
+        return await readSSE(res, onToken);
       }
 
       let detail = '';
       try {
         const j = await res.json();
-        detail = (j.error && j.error.message) || j.detail || JSON.stringify(j);
-      } catch (e) { detail = res.statusText; }
+        detail = (j.error && j.error.message) || j.detail || j.message || JSON.stringify(j);
+      } catch (err) { detail = res.statusText; }
+
+      if (res.status === 404 && !proxyBase) {
+        throw new Error('No proxy at /api on this host. Open the app via your workers.dev URL, or set Proxy URL (sidebar) to your Cloudflare Worker address.');
+      }
 
       if (res.status === 429) {
-        // Quota / rate limit hit → cool this key down and rotate
-        ks.state = 'limited';
-        ks.exhaustedUntil = Date.now() + COOLDOWN_MS;
-        persistKeyStates();
-        renderKeyList();
-        lastErr = new Error(`All keys rate-limited (429). They auto-recover after cooldown — or press "Reset key states".`);
+        // Quota / rate limit hit → cool this entry down and rotate
+        e.state = 'limited';
+        e.exhaustedUntil = Date.now() + COOLDOWN_MS;
+        persistPool();
+        renderPoolList();
+        lastErr = new Error('Every API is rate-limited (429). They auto-recover after cooldown — or press "↻ Reset API states".');
         continue;
       }
 
       if (res.status === 401 || res.status === 403) {
-        ks.state = 'invalid';
-        persistKeyStates();
-        renderKeyList();
-        lastErr = new Error(`Key ${currentKeyIndex + 1} is invalid/expired (${res.status}). Replace it in the sidebar.`);
+        e.state = 'invalid';
+        persistPool();
+        renderPoolList();
+        lastErr = new Error(`${e.label}: key rejected (${res.status}) — fix or remove that line. Rotated to next.`);
+        continue;
+      }
+
+      if (res.status === 400 || res.status === 402 || res.status === 404) {
+        // Bad model name, payment required, or unknown endpoint on THIS entry
+        e.state = 'invalid';
+        persistPool();
+        renderPoolList();
+        lastErr = new Error(`${e.label}: config problem (${res.status}) ${String(detail).slice(0, 100)} — rotated to next.`);
         continue;
       }
 
       if (res.status >= 500) {
-        lastErr = new Error(`NVIDIA server error ${res.status}: ${detail}`);
-        continue; // transient — try next key
+        lastErr = new Error(`${e.label}: server error ${res.status} — trying next.`);
+        continue; // transient — try next entry
       }
 
-      throw new Error(`NVIDIA error ${res.status}: ${detail}`);
+      throw new Error(`${e.label} error ${res.status}: ${detail}`);
     }
 
-    throw lastErr || new Error('No usable NVIDIA keys right now. Wait for cooldown or reset key states.');
+    throw lastErr || new Error('No usable APIs right now. Wait for cooldown or press "↻ Reset API states".');
   }
 
   // ============ SEND ============
@@ -837,7 +911,7 @@
         renderStreaming(streamEl, accum);
       };
 
-      const reply = backend === 'ollama' ? await callOllama(text) : await callNVIDIA(text, onToken);
+      const reply = backend === 'ollama' ? await callOllama(text) : await callPool(text, onToken);
 
       removeTyping();
       if (streamEl) {
@@ -846,7 +920,7 @@
         addMessage('assistant', reply);
       }
       messages.push({ role: 'assistant', content: reply });
-      updateStatus('Ready • ' + (backend === 'nvidia' ? keySummary() : 'no limits'));
+      updateStatus('Ready • ' + (backend === 'pool' ? poolSummary() : 'no limits'));
     } catch (err) {
       removeTyping();
       if (streamEl) {
@@ -854,7 +928,7 @@
       } else {
         addMessage('assistant', `**Error:** ${err.message}`);
       }
-      updateStatus('Error • ' + keySummary());
+      updateStatus('Error • ' + poolSummary());
     }
 
     isLoading = false;
@@ -864,7 +938,7 @@
 
   // ============ INIT ============
   loadSettings();
-  updateStatus('Ready • ' + keySummary());
+  updateStatus('Ready • ' + poolSummary());
 </script>
 </body>
 </html>
