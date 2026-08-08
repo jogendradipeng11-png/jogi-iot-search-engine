@@ -94,6 +94,14 @@ function parseServerKeys(env) {
 
 const serverRotate = {}; // per-provider round-robin index
 
+// Rotate through server-side keys of one provider
+function pickServerKey(serverKeys, preset) {
+  const c = serverKeys.filter(k => k.preset === preset);
+  if (!c.length) return null;
+  const i = (serverRotate[preset] = ((serverRotate[preset] ?? -1) + 1) % c.length);
+  return c[i];
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '*';
@@ -125,6 +133,32 @@ export default {
         key: k.key.length > 8 ? '••••' + k.key.slice(-4) : '••••',
       }));
       return json({ keys: list });
+    }
+
+    // 🎨 Image generation (NVIDIA SDXL-Turbo, uses your server NVIDIA keys)
+    if (request.method === 'POST' && url.pathname.endsWith('/gen')) {
+      const body = await request.json().catch(() => ({}));
+      const prompt = (body.prompt || '').trim();
+      if (!prompt) return json({ error: 'Empty prompt' }, 400);
+      const nv = pickServerKey(serverKeys, 'nvidia');
+      if (!nv) {
+        return json({ error: 'No NVIDIA server key in JOGI_KEYS — add an nvapi-… line to enable image generation.' }, 400);
+      }
+      const up = await fetch('https://ai.api.nvidia.com/v1/genai/stabilityai/sdxl-turbo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + nv.key },
+        body: JSON.stringify({
+          text_prompts: [{ text: prompt, weight: 1 }],
+          height: 512, width: 512, seed: 0,
+          steps: 4, cfg_scale: 2, sampler: 'K_EULER_ANCESTRAL'
+        }),
+      });
+      const data = await up.json().catch(() => ({}));
+      const b64 = data && data.artifacts && data.artifacts[0] && data.artifacts[0].base64;
+      if (!b64) {
+        return json({ error: 'Image generation failed: ' + String(data.title || data.message || JSON.stringify(data)).slice(0, 200) }, 502);
+      }
+      return json({ image: b64, model: 'stabilityai/sdxl-turbo' });
     }
 
     if (request.method === 'POST') {
