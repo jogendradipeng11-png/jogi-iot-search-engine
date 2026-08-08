@@ -8,6 +8,8 @@ updated: 2026-08-08
 
 Project files live in `projects/jogi-iot-search/` (index.html, worker.js, README.md). Deployed via GitHub Pages (branch deploy, root).
 
+**Status: WORKING.** Verified 2026-08-08 via curl from sandbox: worker serves the app and POST /api proxies to NVIDIA with correct CORS reflection (403 on fake key = upstream reached). User side needed only the Proxy URL value (`/api`).
+
 **Decision:** the app calls NVIDIA NIM (`integrate.api.nvidia.com`) through a user-hosted Cloudflare Worker proxy (`worker.js`), never directly from the browser.
 
 **Why:** verified via curl (2026-08-08) — NVIDIA's preflight returns `access-control-allow-origin` only for allowlisted origins (e.g. build.nvidia.com). From github.io/file:// origins there is NO ACAO header, so browsers block with `TypeError: Failed to fetch`. No static site can call it directly.
