@@ -1,29 +1,23 @@
 /**
- * Jogi IoT Search Engine — CORS proxy for NVIDIA NIM
+ * Jogi IoT Search Engine — Cloudflare Worker
  *
- * Why this exists: NVIDIA's API only returns CORS headers for its own origins
- * (build.nvidia.com). Browsers block calls from GitHub Pages / localhost with
- * "Failed to fetch". This free Cloudflare Worker forwards the request and adds
- * the headers your browser needs.
+ * Does two jobs on one URL:
+ *   POST /api (or any POST)  → proxies to NVIDIA NIM with CORS headers added
+ *   GET  /                   → serves the static site (index.html) from assets
  *
- * Deploy (no CLI, ~2 min):
- *   1. https://workers.cloudflare.com → sign up free → Create Worker → Deploy
- *   2. "Edit code" → replace everything with this file → Deploy
- *   3. Copy your https://<name>.<subdomain>.workers.dev URL
- *   4. Paste it into the app's "Proxy URL" setting in the sidebar
- *
- * Free tier: 100,000 requests/day — effectively unlimited for personal use.
- * Your API keys travel browser → your worker → NVIDIA. Nobody else sees them.
+ * Why: NVIDIA's API only returns CORS headers for its own origins, so browsers
+ * block direct calls ("Failed to fetch"). This worker sits in the middle.
+ * Free tier: 100,000 requests/day. Keys go browser → your worker → NVIDIA.
  */
 
 const NVIDIA_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
 
-// Optional: lock the worker to only serve YOUR site (recommended once live).
-// Add your GitHub Pages origin, e.g. 'https://yourname.github.io'
+// Optional: lock the proxy to only serve YOUR site, e.g.
+// const ALLOWED_ORIGINS = ['https://jogi-iot-search-engine.jogendra-dipeng11.workers.dev'];
 const ALLOWED_ORIGINS = []; // empty = allow any origin (fine for personal use)
 
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     const origin = request.headers.get('Origin') || '*';
     const allowed =
       ALLOWED_ORIGINS.length === 0 || ALLOWED_ORIGINS.includes(origin) || origin === 'null';
@@ -41,26 +35,31 @@ export default {
       return new Response(null, { status: 204, headers: cors });
     }
 
-    if (request.method !== 'POST') {
-      return new Response('Jogi IoT proxy: POST only', { status: 405, headers: cors });
+    // Proxy: any POST goes to NVIDIA
+    if (request.method === 'POST') {
+      const upstream = await fetch(NVIDIA_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: request.headers.get('Authorization') || '',
+        },
+        body: await request.text(),
+      });
+
+      const body = await upstream.text();
+      return new Response(body, {
+        status: upstream.status,
+        headers: {
+          ...cors,
+          'Content-Type': upstream.headers.get('Content-Type') || 'application/json',
+        },
+      });
     }
 
-    const upstream = await fetch(NVIDIA_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: request.headers.get('Authorization') || '',
-      },
-      body: await request.text(),
-    });
-
-    const body = await upstream.text();
-    return new Response(body, {
-      status: upstream.status,
-      headers: {
-        ...cors,
-        'Content-Type': upstream.headers.get('Content-Type') || 'application/json',
-      },
-    });
+    // Everything else (GET/HEAD): serve the static site if assets are bound
+    if (env && env.ASSETS) {
+      return env.ASSETS.fetch(request);
+    }
+    return new Response('Jogi IoT proxy: POST only', { status: 405, headers: cors });
   },
 };
