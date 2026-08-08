@@ -53,6 +53,17 @@ const PRESETS = {
 
 function hostOf(u) { try { return new URL(u).hostname; } catch (e) { return ''; } }
 
+function detectPreset(k) {
+  if (/^nvapi-/.test(k)) return 'nvidia';
+  if (/^gsk_/.test(k)) return 'groq';
+  if (/^AIza/.test(k)) return 'gemini';
+  if (/^sk-or-/.test(k)) return 'openrouter';
+  if (/^hf_/.test(k)) return 'huggingface';
+  if (/^ghp_/.test(k)) return 'github';
+  if (/^csk-/.test(k)) return 'cerebras';
+  return null;
+}
+
 function parseServerKeys(env) {
   const out = [];
   const raw = (env && env.JOGI_KEYS) || '';
@@ -61,11 +72,22 @@ function parseServerKeys(env) {
     const t = line.trim();
     if (!t || t.startsWith('#')) continue;
     const parts = t.split('|').map(s => s.trim());
-    const key = parts[1] || '';
+    const first = (parts[0] || '').toLowerCase();
+    let preset = null, label = '', key = '', model = parts[2] || '', target = null;
+
+    if (parts.length >= 2 && PRESETS[first]) {
+      preset = first; label = PRESETS[first].label; key = parts[1];
+      if (!model) model = PRESETS[first].model;
+      target = PRESETS[first].base || null;
+    } else if (/^https?:\/\//i.test(parts[0]) && parts[1]) {
+      preset = 'custom'; label = 'Custom'; key = parts[1]; target = parts[0];
+    } else {
+      // Bare key line (no pipes) — detect the provider from the key prefix
+      const g = detectPreset(t);
+      if (g) { preset = g; label = PRESETS[g].label; key = t; model = PRESETS[g].model; target = PRESETS[g].base || null; }
+    }
     if (!key) continue;
-    const p = PRESETS[(parts[0] || '').toLowerCase()];
-    if (p) out.push({ preset: parts[0].toLowerCase(), label: p.label, key, model: parts[2] || p.model, target: p.base || null });
-    else if (/^https?:\/\//i.test(parts[0])) out.push({ preset: 'custom', label: 'Custom', key, model: parts[2] || '', target: parts[0] });
+    out.push({ preset, label, key, model, target });
   }
   return out;
 }

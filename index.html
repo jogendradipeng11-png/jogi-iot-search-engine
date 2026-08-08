@@ -442,7 +442,7 @@
       <textarea id="nvidiaKeys" placeholder="nvapi-xxxxxxxx&#10;nvapi-yyyyyyyy" spellcheck="false" onchange="saveSettings()"></textarea>
 
       <label>More free APIs — one per line: provider | key | model?</label>
-      <textarea id="pool" placeholder="groq | gsk_xxxxx&#10;gemini | AIza_xxxxx&#10;openrouter | sk-or-xxxxx | meta-llama/llama-3.3-70b-instruct:free&#10;mistral | xxxxx | mistral-small-latest" spellcheck="false" onchange="saveSettings()"></textarea>
+      <textarea id="pool" placeholder="Just paste keys — auto-detected:&#10;nvapi-xxxxx (NVIDIA)&#10;gsk_xxxxx (Groq)&#10;AIza_xxxxx (Gemini)&#10;or with model: groq | gsk_xxxxx | model" spellcheck="false" onchange="saveSettings()"></textarea>
 
       <div id="keyList"></div>
       <button class="reset-btn" onclick="resetPool()">↻ Reset API states</button>
@@ -544,6 +544,19 @@
   }
 
   // ============ API POOL ============
+  // Detect a bare API key's provider from its prefix — so you can paste
+  // keys with NO format at all: nvapi-…, gsk_…, AIza…, sk-or-…, hf_…, ghp_…, csk-…
+  function detectPreset(k) {
+    if (/^nvapi-/.test(k)) return 'nvidia';
+    if (/^gsk_/.test(k)) return 'groq';
+    if (/^AIza/.test(k)) return 'gemini';
+    if (/^sk-or-/.test(k)) return 'openrouter';
+    if (/^hf_/.test(k)) return 'huggingface';
+    if (/^ghp_/.test(k)) return 'github';
+    if (/^csk-/.test(k)) return 'cerebras';
+    return null;
+  }
+
   function parsePoolLine(line) {
     const parts = line.split('|').map(s => s.trim());
     if (!parts[0]) return null;
@@ -557,6 +570,12 @@
       try { host = new URL(parts[0]).hostname.replace(/^(api\.|www\.)/, ''); } catch (e) { return null; }
       const key = parts[1] || '';
       return { id: parts[0] + '|' + key, label: host, key, model: parts[2] || $('model').value.trim() || DEFAULT_MODEL, target: parts[0] };
+    }
+    // Bare key (no pipes) — detect the provider from the key prefix
+    const g = detectPreset(line);
+    if (g) {
+      const p = PRESETS[g];
+      return { id: p.name + '|' + line, label: p.name, key: line, model: p.model, target: p.base || null };
     }
     return null; // unrecognized line — skipped
   }
