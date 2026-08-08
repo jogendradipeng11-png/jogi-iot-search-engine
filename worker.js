@@ -46,12 +46,14 @@ export default {
         body: await request.text(),
       });
 
-      const body = await upstream.text();
-      return new Response(body, {
+      // Stream the body straight through — tokens reach the browser the
+      // moment NVIDIA emits them, instead of waiting for the full answer
+      return new Response(upstream.body, {
         status: upstream.status,
         headers: {
           ...cors,
           'Content-Type': upstream.headers.get('Content-Type') || 'application/json',
+          'Cache-Control': 'no-cache',
         },
       });
     }

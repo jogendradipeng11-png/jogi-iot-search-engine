@@ -634,6 +634,28 @@
     if (t) t.remove();
   }
 
+  // ============ STREAMING UI ============
+  function addStreamingMessage() {
+    const empty = $('empty');
+    if (empty) empty.remove();
+    const chat = $('chat');
+    const div = document.createElement('div');
+    div.className = 'message assistant';
+    div.innerHTML = `<div class="avatar ai">JI</div><div class="content"></div>`;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+    return div.querySelector('.content');
+  }
+
+  function renderStreaming(el, text) {
+    el.innerHTML = marked.parse(text);
+    $('chat').scrollTop = $('chat').scrollHeight;
+  }
+
+  function finalizeStreaming(el) {
+    el.querySelectorAll('pre code').forEach(b => hljs.highlightElement(b));
+  }
+
   // ============ API CALLS ============
   async function callOllama(prompt) {
     const url = $('ollamaUrl').value.replace(/\/$/, '') + '/api/chat';
@@ -658,7 +680,7 @@
     return data.message.content;
   }
 
-  async function callNVIDIA(prompt) {
+  async function callNVIDIA(prompt, onToken) {
     if (!keyStates.length) {
       throw new Error('Add at least one NVIDIA API key in the sidebar (up to 10). Get free keys at build.nvidia.com');
     }
@@ -694,7 +716,8 @@
               { role: 'user', content: prompt }
             ],
             temperature: 0.2,
-            max_tokens: 2048
+            max_tokens: 2048,
+            stream: true
           })
         });
       } catch (netErr) {
@@ -712,8 +735,37 @@
         ks.exhaustedUntil = 0;
         persistKeyStates();
         renderKeyList();
-        const data = await res.json();
-        return data.choices[0].message.content;
+
+        // SSE streaming: read tokens as they arrive, render live
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let full = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // keep incomplete line for next chunk
+          for (const line of lines) {
+            const t = line.trim();
+            if (!t.startsWith('data:')) continue;
+            const payload = t.slice(5).trim();
+            if (!payload || payload === '[DONE]') continue;
+            try {
+              const j = JSON.parse(payload);
+              const delta = (j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content) || '';
+              if (delta) {
+                full += delta;
+                if (onToken) onToken(full);
+              }
+            } catch (e) { /* ignore unparseable keep-alive lines */ }
+          }
+        }
+
+        if (!full) throw new Error('Empty response from NVIDIA — try again.');
+        return full;
       }
 
       if (res.status === 404 && !proxy) {
@@ -773,23 +825,35 @@
     showTyping();
     updateStatus('Thinking…');
 
+    let streamEl = null;
     try {
       const backend = $('backend').value;
-      let reply;
+      const onToken = (accum) => {
+        if (!streamEl) {
+          removeTyping();
+          streamEl = addStreamingMessage();
+          updateStatus('Answering…');
+        }
+        renderStreaming(streamEl, accum);
+      };
 
-      if (backend === 'ollama') {
-        reply = await callOllama(text);
-      } else {
-        reply = await callNVIDIA(text);
-      }
+      const reply = backend === 'ollama' ? await callOllama(text) : await callNVIDIA(text, onToken);
 
       removeTyping();
-      addMessage('assistant', reply);
+      if (streamEl) {
+        finalizeStreaming(streamEl);
+      } else {
+        addMessage('assistant', reply);
+      }
       messages.push({ role: 'assistant', content: reply });
       updateStatus('Ready • ' + (backend === 'nvidia' ? keySummary() : 'no limits'));
     } catch (err) {
       removeTyping();
-      addMessage('assistant', `**Error:** ${err.message}`);
+      if (streamEl) {
+        streamEl.innerHTML += `<p style="color:#f85149"><em>⚠ ${err.message}</em></p>`;
+      } else {
+        addMessage('assistant', `**Error:** ${err.message}`);
+      }
       updateStatus('Error • ' + keySummary());
     }
 
