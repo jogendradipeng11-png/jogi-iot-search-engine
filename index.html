@@ -561,6 +561,33 @@
     return null; // unrecognized line — skipped
   }
 
+  // Permanent server-side keys (optional): the worker holds them in the
+  // JOGI_KEYS secret (Cloudflare dashboard). GET /api/keys returns a masked
+  // list; these entries send no client key — the worker injects it server-side,
+  // so the app works on ANY device, anywhere, with zero key entry.
+  let serverEntries = [];
+
+  async function loadServerKeys() {
+    const proxyBase = $('proxyUrl').value.trim().replace(/\/+$/, '');
+    const endpoint = proxyBase || '/api';
+    try {
+      const res = await fetch(endpoint + '/keys', { method: 'GET' });
+      if (!res.ok) return;
+      const data = await res.json();
+      const keys = (data && data.keys) || [];
+      serverEntries = keys.map(k => ({
+        id: 'server|' + k.preset + '|' + (k.key || ''),
+        label: 'Server • ' + (k.label || k.preset),
+        key: '',
+        model: k.model || $('model').value.trim() || DEFAULT_MODEL,
+        target: k.target || null,
+        server: true,
+        requests: 0, state: 'active', exhaustedUntil: 0
+      }));
+      buildPool();
+    } catch (e) { /* no worker / endpoint unavailable — client keys only */ }
+  }
+
   function buildPool() {
     const model = $('model').value.trim() || DEFAULT_MODEL;
     const entries = $('nvidiaKeys').value
@@ -578,6 +605,9 @@
         const e = parsePoolLine(line);
         if (e) entries.push(e);
       });
+
+    // Permanent server-side keys (if the worker has JOGI_KEYS configured)
+    serverEntries.forEach(e => entries.push(e));
 
     let saved = {};
     try { saved = JSON.parse(localStorage.getItem('jogiKeyStates') || '{}'); } catch (e) {}
@@ -634,7 +664,8 @@
         ? '<span class="kb invalid">invalid</span>'
         : (!usable ? '<span class="kb limited">cooldown</span>' : '<span class="kb ok">active</span>');
       const cur = i === currentIndex ? ' ◄' : '';
-      return `<div class="krow" title="${e.model}">#${i + 1} ${e.label} ${maskKey(e.key)} <span class="kmodel">${e.model}</span> ${badge}<span class="kreq">${e.requests}${cur}</span></div>`;
+      const keyTxt = e.server ? 'server-key' : maskKey(e.key);
+      return `<div class="krow" title="${e.model}">#${i + 1} ${e.label} ${keyTxt} <span class="kmodel">${e.model}</span> ${badge}<span class="kreq">${e.requests}${cur}</span></div>`;
     }).join('');
   }
 
@@ -1045,6 +1076,7 @@
   // ============ INIT ============
   loadSettings();
   renderHistory();
+  loadServerKeys(); // permanent server-side keys from the worker secret
   updateStatus('Ready • ' + poolSummary());
 
   // PWA: installable app shell with offline cache
