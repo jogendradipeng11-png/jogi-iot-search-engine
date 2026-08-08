@@ -415,8 +415,8 @@
       <div id="keyList"></div>
       <button class="reset-btn" onclick="resetKeys()">↻ Reset key states</button>
 
-      <label>Proxy URL (required — see README "CORS fix")</label>
-      <input type="text" id="proxyUrl" placeholder="https://your-worker.workers.dev  (or /api)" onchange="saveSettings()" />
+      <label>Proxy URL (leave empty on the Cloudflare app — auto /api)</label>
+      <input type="text" id="proxyUrl" placeholder="empty = /api (auto)" onchange="saveSettings()" />
 
       <label>Ollama URL (only for Ollama backend)</label>
       <input type="text" id="ollamaUrl" value="http://localhost:11434" onchange="saveSettings()" />
@@ -664,9 +664,10 @@
     }
 
     // NVIDIA's API sends no CORS headers for public origins, so browsers block
-    // direct calls. Route through a tiny proxy (Cloudflare Worker — see README).
-    const proxy = $('proxyUrl').value.trim().replace(/\/$/, '');
-    const endpoint = proxy || 'https://integrate.api.nvidia.com/v1/chat/completions';
+    // direct calls. Default: same-origin /api (the Cloudflare Worker proxies it).
+    // A Proxy URL in settings overrides this (needed on the GitHub Pages copy).
+    const proxy = $('proxyUrl').value.trim().replace(/\/+$/, '');
+    const endpoint = proxy || '/api';
 
     let lastErr = null;
 
@@ -698,11 +699,9 @@
         });
       } catch (netErr) {
         lastErr = new Error(
-          'Failed to fetch — the browser blocked the request (CORS). ' +
-          'NVIDIA\'s API does not allow direct browser calls. ' +
-          (proxy
-            ? 'Check that your Proxy URL is correct and the worker is deployed.'
-            : 'Set the Proxy URL in the sidebar to your free Cloudflare Worker — 2-minute setup, see README "CORS fix".')
+          proxy
+            ? `Failed to reach proxy at ${endpoint} — check the URL and that the worker is deployed.`
+            : `Failed to reach ${endpoint} — hard-refresh (Ctrl+Shift+R). If this is GitHub Pages, set Proxy URL (sidebar) to your Cloudflare Worker address.`
         );
         continue; // try next key
       }
@@ -715,6 +714,10 @@
         renderKeyList();
         const data = await res.json();
         return data.choices[0].message.content;
+      }
+
+      if (res.status === 404 && !proxy) {
+        throw new Error('No proxy at /api on this host. If you are on GitHub Pages, set Proxy URL (sidebar) to your Cloudflare Worker address — then it works.');
       }
 
       let detail = '';
@@ -757,6 +760,8 @@
     const input = $('input');
     const text = input.value.trim();
     if (!text || isLoading) return;
+
+    saveSettings(); // grab latest keys/settings even if a field never lost focus
 
     isLoading = true;
     $('sendBtn').disabled = true;
