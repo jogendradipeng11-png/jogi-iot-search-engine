@@ -540,6 +540,7 @@
 
       <div id="keyList"></div>
       <button class="reset-btn" onclick="resetPool()">↻ Reset API states</button>
+      <button class="reset-btn" onclick="clearAllData()" style="color:#f85149;border-color:#f8514944">🗑 Clear all data & cache</button>
 
       <label>Proxy URL (leave empty on the Cloudflare app — auto /api)</label>
       <input type="text" id="proxyUrl" placeholder="empty = /api (auto)" onchange="saveSettings()" />
@@ -624,6 +625,12 @@
 
   const $ = id => document.getElementById(id);
 
+  function clearAllData() {
+    if (!confirm('Clear all saved keys, history, and settings?')) return;
+    localStorage.clear();
+    location.reload();
+  }
+
   function loadSettings() {
     let b = localStorage.getItem('jogiBackend') || 'pool';
     if (b === 'nvidia' || b === 'custom') b = 'pool';
@@ -631,7 +638,17 @@
     $('model').value     = localStorage.getItem('jogiModel')     || DEFAULT_MODEL;
     $('nvidiaKeys').value = localStorage.getItem('jogiKeys')     || '';
     $('pool').value      = localStorage.getItem('jogiPool')      || '';
-    $('proxyUrl').value  = localStorage.getItem('jogiProxyUrl')  || '';
+
+    // Auto-detect GitHub Pages and set proxy URL if empty
+    let proxy = localStorage.getItem('jogiProxyUrl') || '';
+    const isGitHubPages = location.hostname.includes('github.io');
+    const workerUrl = 'https://jogi-iot-search-engine.jogendra-dipeng11.workers.dev/';
+    if (!proxy && isGitHubPages) {
+      proxy = workerUrl;
+      localStorage.setItem('jogiProxyUrl', proxy);
+    }
+    $('proxyUrl').value = proxy;
+
     $('ollamaUrl').value = localStorage.getItem('jogiOllamaUrl') || 'http://localhost:11434';
     buildPool();
   }
