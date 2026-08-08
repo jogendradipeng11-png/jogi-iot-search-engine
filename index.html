@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Jogi IoT Search Engine – Unlimited AI Search</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0f1117" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Jogi IoT" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
@@ -392,6 +398,21 @@
     }
     .empty p { max-width: 480px; line-height: 1.6; }
 
+    /* Copy buttons */
+    .msg-actions { margin-top: 8px; text-align: right; }
+    .copy-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .copy-btn:hover { color: var(--text); border-color: var(--accent); }
+    .code-copy { position: absolute; top: 6px; right: 6px; }
+
     @media (max-width: 768px) {
       .sidebar { display: none; }
     }
@@ -631,6 +652,85 @@
     return `api ${Math.max(currentIndex, 0) + 1}/${pool.length} • ${reqs} req • ${cooling} cooling`;
   }
 
+  // ============ HISTORY (last searches) ============
+  let conversations = [];
+  let activeChatId = null;
+  try { conversations = JSON.parse(localStorage.getItem('jogiChats') || '[]'); } catch (e) {}
+
+  function saveChats() {
+    localStorage.setItem('jogiChats', JSON.stringify(conversations.slice(-30)));
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function renderHistory() {
+    const el = $('history');
+    if (!conversations.length) {
+      el.innerHTML = '<div style="color:var(--muted);font-size:0.78rem;padding:4px">No searches yet</div>';
+      return;
+    }
+    el.innerHTML = conversations.slice().reverse().map(c =>
+      `<div class="history-item ${c.id === activeChatId ? 'active' : ''}" onclick="loadChat(${c.id})" title="${esc(c.title)}">🔎 ${esc(c.title)}</div>`
+    ).join('');
+  }
+
+  function trackConversation(title) {
+    if (!activeChatId) {
+      activeChatId = Date.now();
+      conversations.push({ id: activeChatId, title: (title || 'search').slice(0, 42), messages: [] });
+      if (conversations.length > 30) conversations = conversations.slice(-30);
+    }
+    const conv = conversations.find(c => c.id === activeChatId);
+    if (conv) conv.messages = messages.slice(-40); // cap stored history
+    saveChats();
+    renderHistory();
+  }
+
+  function loadChat(id) {
+    const conv = conversations.find(c => c.id === id);
+    if (!conv) return;
+    activeChatId = id;
+    messages = conv.messages.slice();
+    const chat = $('chat');
+    chat.innerHTML = '';
+    messages.forEach(m => addMessage(m.role, m.content));
+    renderHistory();
+  }
+
+  // ============ COPY BUTTONS ============
+  function addCopyButtons(container, rawText) {
+    if (!container || container.querySelector('.msg-actions')) return;
+    const bar = document.createElement('div');
+    bar.className = 'msg-actions';
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = '📋 copy answer';
+    btn.onclick = () => {
+      navigator.clipboard.writeText(rawText);
+      btn.textContent = '✓ copied';
+      setTimeout(() => { btn.textContent = '📋 copy answer'; }, 1500);
+    };
+    bar.appendChild(btn);
+    container.appendChild(bar);
+
+    container.querySelectorAll('pre').forEach(pre => {
+      if (pre.querySelector('.code-copy')) return;
+      pre.style.position = 'relative';
+      const code = pre.querySelector('code');
+      const b = document.createElement('button');
+      b.className = 'copy-btn code-copy';
+      b.textContent = 'copy';
+      b.onclick = () => {
+        navigator.clipboard.writeText(code ? code.innerText : pre.innerText);
+        b.textContent = '✓';
+        setTimeout(() => { b.textContent = 'copy'; }, 1500);
+      };
+      pre.appendChild(b);
+    });
+  }
+
   // ============ UI HELPERS ============
   function updateStatus(text) {
     $('statusText').textContent = text;
@@ -638,6 +738,8 @@
 
   function newChat() {
     messages = [];
+    activeChatId = null;
+    renderHistory();
     $('chat').innerHTML = `
       <div class="empty" id="empty">
         <h2>Ask anything — code, IoT, docs</h2>
@@ -681,6 +783,7 @@
     chat.scrollTop = chat.scrollHeight;
 
     div.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+    if (role === 'assistant') addCopyButtons(div.querySelector('.content'), content);
   }
 
   function showTyping() {
@@ -719,8 +822,9 @@
     $('chat').scrollTop = $('chat').scrollHeight;
   }
 
-  function finalizeStreaming(el) {
+  function finalizeStreaming(el, rawText) {
     el.querySelectorAll('pre code').forEach(b => hljs.highlightElement(b));
+    addCopyButtons(el, rawText);
   }
 
   // ============ API CALLS ============
@@ -895,6 +999,7 @@
 
     addMessage('user', text);
     messages.push({ role: 'user', content: text });
+    trackConversation(text);
 
     showTyping();
     updateStatus('Thinking…');
@@ -915,11 +1020,12 @@
 
       removeTyping();
       if (streamEl) {
-        finalizeStreaming(streamEl);
+        finalizeStreaming(streamEl, reply);
       } else {
         addMessage('assistant', reply);
       }
       messages.push({ role: 'assistant', content: reply });
+      trackConversation();
       updateStatus('Ready • ' + (backend === 'pool' ? poolSummary() : 'no limits'));
     } catch (err) {
       removeTyping();
@@ -938,7 +1044,13 @@
 
   // ============ INIT ============
   loadSettings();
+  renderHistory();
   updateStatus('Ready • ' + poolSummary());
+
+  // PWA: installable app shell with offline cache
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
 </script>
 </body>
 </html>
