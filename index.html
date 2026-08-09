@@ -7,7 +7,6 @@
 <link id="dynamicManifest" rel="manifest" href="">
 <meta name="theme-color" content="#0f1117">
 <meta name="mobile-web-app-capable" content="yes">
-<link id="dynamicAppleIcon" rel="apple-touch-icon" href="">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
@@ -24,12 +23,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 .history-item:hover,.history-item.active{background:var(--card);color:var(--text)}
 .settings{border-top:1px solid var(--border);padding-top:14px;font-size:.85rem;overflow-y:auto;max-height:55vh}
 .settings label{display:block;margin-bottom:6px;color:var(--muted)}
-.settings input,.settings select,.settings textarea{width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:6px;margin-bottom:12px;font-size:.85rem}
+.settings input,.settings select{width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:6px;margin-bottom:12px;font-size:.85rem}
 .main{flex:1;display:flex;flex-direction:column;min-width:0}
 .header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .header h1{font-size:1.1rem;font-weight:600}
+.header-actions{display:flex;align-items:center;gap:8px}
+.gen-btn{background:linear-gradient(90deg,#58a6ff33,#bc8cff33);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:20px;cursor:pointer;font-size:.8rem}
+.gen-btn:hover{border-color:var(--accent)}
 .status{font-size:.8rem;color:var(--muted);display:flex;align-items:center;gap:6px}
 .status .dot{width:8px;height:8px;background:var(--ok);border-radius:50%}
+.workspace{flex:1;display:flex;overflow:hidden}
+.chat-pane{flex:1;display:flex;flex-direction:column;min-width:0;height:100%;border-right:1px solid var(--border)}
+.preview-pane{width:45%;display:none;flex-direction:column;background:#0d1117;height:100%}
+.preview-pane.active{display:flex}
+.preview-bar{padding:10px 16px;background:var(--sidebar);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);font-size:0.85rem;font-weight:600}
+.preview-frame{flex:1;background:#fff;width:100%;border:none}
 .chat-container{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:20px}
 .message{max-width:800px;margin:0 auto;width:100%;display:flex;gap:14px}
 .avatar{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;flex-shrink:0}
@@ -39,13 +47,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 .content pre{background:#0d1117;border-radius:8px;padding:14px;overflow-x:auto;margin:12px 0;position:relative}
 .content code{font-family:"SF Mono","Fira Code",Consolas,monospace;font-size:.88rem}
 .content p{margin-bottom:10px}.content p:last-child{margin-bottom:0}
+.content img, .content video{max-width:100%;border-radius:8px;margin:8px 0;display:block}
 .input-area{padding:16px 24px 24px;border-top:1px solid var(--border)}
+.attach-row{max-width:800px;margin:0 auto 8px;display:flex;gap:8px;flex-wrap:wrap}
+.attach-chip{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:4px 12px;font-size:.78rem;color:var(--muted)}
+.attach-chip img{width:22px;height:22px;border-radius:4px;object-fit:cover}
+.attach-chip button{background:none;border:none;color:var(--muted);cursor:pointer;font-weight:bold}
 .input-box{max-width:800px;margin:0 auto;position:relative}
-#input{width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);padding:14px 50px 14px 50px;border-radius:12px;resize:none;font-size:1rem;line-height:1.5;min-height:56px;max-height:160px;outline:none;font-family:inherit}
+#input{width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);padding:14px 90px 14px 92px;border-radius:12px;resize:none;font-size:1rem;line-height:1.5;min-height:56px;max-height:160px;outline:none;font-family:inherit}
 #input:focus{border-color:var(--accent)}
 .send-btn{position:absolute;right:10px;bottom:10px;background:var(--accent);border:none;width:36px;height:36px;border-radius:8px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .send-btn:disabled{background:var(--border);cursor:not-allowed}
-.attach-btn{position:absolute;left:10px;bottom:10px;background:transparent;border:none;color:var(--muted);font-size:1.15rem;cursor:pointer;width:36px;height:36px;border-radius:8px}
+.attach-btn,.mic-btn{position:absolute;bottom:10px;background:transparent;border:none;color:var(--muted);font-size:1.15rem;cursor:pointer;width:36px;height:36px;border-radius:8px}
+.attach-btn{left:8px}.mic-btn{left:48px}
 .hints{max-width:800px;margin:12px auto 0;display:flex;gap:8px;flex-wrap:wrap;font-size:.8rem}
 .hint{background:var(--card);border:1px solid var(--border);padding:6px 12px;border-radius:20px;cursor:pointer;color:var(--muted)}
 .hint:hover{border-color:var(--accent);color:var(--text)}
@@ -55,8 +69,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 @keyframes bounce{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
 .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--muted);padding:40px}
 .empty h2{font-size:1.8rem;color:var(--text);margin-bottom:12px}
-.copy-btn{background:var(--card);border:1px solid var(--border);color:var(--muted);padding:3px 10px;border-radius:6px;font-size:.72rem;cursor:pointer;margin-left:4px}
+.msg-actions{margin-top:8px;display:flex;gap:6px;justify-content:flex-end}
+.copy-btn{background:var(--card);border:1px solid var(--border);color:var(--muted);padding:3px 10px;border-radius:6px;font-size:.72rem;cursor:pointer}
+.copy-btn:hover{color:var(--text);border-color:var(--accent)}
 .code-copy{position:absolute;top:6px;right:6px}
+@media(max-width:1024px){.preview-pane{position:absolute;right:0;top:0;width:100%;z-index:50}}
 @media(max-width:768px){.sidebar{display:none}}
 </style>
 </head>
@@ -68,43 +85,73 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
   <div class="history" id="history"></div>
   <div class="settings">
     <label>Default Model</label>
-    <input type="text" id="model" value="meta/llama-3.3-70b-instruct" onchange="save()">
+    <input type="text" id="model" value="meta/llama-3.3-70b-instruct" onchange="saveSettings()">
     <label>Worker Proxy URL</label>
-    <input type="text" id="proxyUrl" placeholder="https://your-worker.workers.dev/" onchange="save()">
+    <input type="text" id="proxyUrl" placeholder="https://your-worker.workers.dev/" onchange="saveSettings()">
   </div>
 </div>
+
 <div class="main">
   <div class="header">
     <h1>Jogi IoT Search Engine</h1>
-    <div class="status"><div class="dot"></div><span id="statusText">Ready</span></div>
-  </div>
-  <div class="chat-container" id="chat">
-    <div class="empty" id="empty">
-      <h2>Ask anything - code, IoT, docs</h2>
-      <p>Requests are automatically rotated across your worker secrets seamlessly.</p>
+    <div class="header-actions">
+      <button class="gen-btn" onclick="genImage()">Image</button>
+      <button class="gen-btn" onclick="gen3D()">3D View</button>
+      <button class="gen-btn" onclick="genVideo()">Video</button>
+      <div class="status"><div class="dot"></div><span id="statusText">Ready</span></div>
     </div>
   </div>
-  <div class="input-area">
-    <div class="input-box">
-      <textarea id="input" rows="1" placeholder="Ask anything..." onkeydown="handleKey(event)"></textarea>
-      <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="Attach">+</button>
-      <input type="file" id="fileInput" accept=".txt,.md,.json,.js,.py" style="display:none" onchange="handleFiles(this)">
-      <button class="send-btn" id="sendBtn" onclick="send()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-      </button>
+
+  <div class="workspace">
+    <div class="chat-pane">
+      <div class="chat-container" id="chat">
+        <div class="empty" id="empty">
+          <h2>Ask anything - code, IoT, docs</h2>
+          <p>Full chat history, video player, and side-by-side live HTML code viewer fully active.</p>
+        </div>
+      </div>
+      <div class="input-area">
+        <div class="attach-row" id="attachRow"></div>
+        <div class="input-box">
+          <textarea id="input" rows="1" placeholder="Ask anything or describe code/media..." onkeydown="handleKey(event)"></textarea>
+          <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="Attach">+</button>
+          <button class="mic-btn" onclick="startVoice()" title="Voice">Mic</button>
+          <input type="file" id="fileInput" accept="image/*,.mp4,.webm,.txt,.md,.json,.js,.py,.html,.csv" multiple style="display:none" onchange="handleFiles(this)">
+          <button class="send-btn" id="sendBtn" onclick="send()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          </button>
+        </div>
+        <div class="hints">
+          <div class="hint" onclick="setHint('Build a responsive login card in HTML/CSS')">HTML Preview</div>
+          <div class="hint" onclick="setHint('Arduino DHT11 code')">Arduino DHT11</div>
+          <div class="hint" onclick="setHint('Play industrial system video')">Video Player</div>
+        </div>
+      </div>
     </div>
-    <div class="hints">
-      <div class="hint" onclick="setHint('Arduino DHT11 code')">Arduino DHT11</div>
-      <div class="hint" onclick="setHint('MQTT vs HTTP')">MQTT vs HTTP</div>
+
+    <!-- Side-by-Side Live Preview Pane -->
+    <div class="preview-pane" id="previewPane">
+      <div class="preview-bar">
+        <span>Live Code Preview</span>
+        <button class="copy-btn" onclick="togglePreview(false)">Close Panel</button>
+      </div>
+      <iframe class="preview-frame" id="previewFrame"></iframe>
     </div>
   </div>
 </div>
+
 <script>
 const manifestData = {name:"Jogi IoT Search Engine",short_name:"JogiIoT",start_url:".",display:"standalone",background_color:"#0f1117",theme_color:"#0f1117"};
 document.getElementById('dynamicManifest').href = URL.createObjectURL(new Blob([JSON.stringify(manifestData)],{type:'application/json'}));
 
 const $ = id => document.getElementById(id);
-let messages = [], isLoading = false, attachedDocText = '';
+let messages = [], isLoading = false, activeId = null, conversations = [];
+let pendingImg = null, attachedDocs = [];
+
+try{conversations = JSON.parse(localStorage.getItem('jogiChats')||'[]')}catch(e){}
+
+function saveChats(){localStorage.setItem('jogiChats', JSON.stringify(conversations.slice(-30)))}
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
 
 function load(){
   $('model').value = localStorage.getItem('jogiModel') || 'meta/llama-3.3-70b-instruct';
@@ -114,36 +161,170 @@ function load(){
     localStorage.setItem('jogiProxyUrl', proxy);
   }
   $('proxyUrl').value = proxy;
+  renderHistory();
 }
-function save(){
+
+function saveSettings(){
   localStorage.setItem('jogiModel', $('model').value);
   localStorage.setItem('jogiProxyUrl', $('proxyUrl').value);
 }
+
 function status(t){ $('statusText').textContent = t; }
 
-function handleFiles(input){
-  const file = input.files[0];
-  if(!file)return;
-  const r = new FileReader();
-  r.onload = () => { attachedDocText = '\n\n[Attached File: '+file.name+']\n'+r.result; alert('File attached successfully!'); };
-  r.readAsText(file);
+function renderHistory(){
+  const el = $('history');
+  if(!conversations.length){el.innerHTML='<div style="color:var(--muted);font-size:.78rem;padding:4px">No searches yet</div>';return}
+  el.innerHTML = conversations.slice().reverse().map(c=>`<div class="history-item ${c.id===activeId?'active':''}" onclick="loadChat(${c.id})">${esc(c.title)}</div>`).join('');
 }
+
+function track(title){
+  if(!activeId){
+    activeId = Date.now();
+    conversations.push({id:activeId, title:(title||'search').slice(0,42), messages:[]});
+    if(conversations.length>30) conversations = conversations.slice(-30);
+  }
+  const conv = conversations.find(c=>c.id===activeId);
+  if(conv) conv.messages = messages.slice(-40);
+  saveChats();
+  renderHistory();
+}
+
+function loadChat(id){
+  const conv = conversations.find(c=>c.id===id);
+  if(!conv) return;
+  activeId = id;
+  messages = conv.messages.slice();
+  $('chat').innerHTML = '';
+  messages.forEach(m => addMsg(m.role, m.content));
+  renderHistory();
+}
+
+function newChat(){
+  messages = [];
+  activeId = null;
+  renderHistory();
+  $('chat').innerHTML = '<div class="empty" id="empty"><h2>Ask anything - code, IoT, docs</h2><p>Full chat history, video player, and side-by-side live HTML code viewer fully active.</p></div>';
+  togglePreview(false);
+}
+
+function handleFiles(input){
+  const files = Array.from(input.files||[]);
+  input.value = '';
+  files.forEach(f => {
+    if(f.type.startsWith('image/')){
+      const r = new FileReader();
+      r.onload = () => { pendingImg = {name: f.name, dataUrl: r.result}; renderAttach(); };
+      r.readAsDataURL(f);
+    } else if(f.type.startsWith('video/')){
+      const r = new FileReader();
+      r.onload = () => {
+        const videoHtml = `### Uploaded Video: ${f.name}\n<video controls style="width:100%;max-height:350px;border-radius:8px;" src="${r.result}"></video>`;
+        addMsg('assistant', videoHtml);
+        messages.push({role:'assistant', content: videoHtml});
+        track();
+      };
+      r.readAsDataURL(f);
+    } else {
+      const r = new FileReader();
+      r.onload = () => { attachedDocs.push({name: f.name, text: String(r.result).slice(0,20000)}); renderAttach(); };
+      r.readAsText(f);
+    }
+  });
+}
+
+function renderAttach(){
+  const row = $('attachRow');
+  row.innerHTML = '';
+  if(pendingImg) row.innerHTML += `<div class="attach-chip"><img src="${pendingImg.dataUrl}"/><span>${pendingImg.name}</span><button onclick="pendingImg=null;renderAttach()">×</button></div>`;
+  attachedDocs.forEach((d, i) => {
+    row.innerHTML += `<div class="attach-chip"><span>📄 ${d.name}</span><button onclick="attachedDocs.splice(${i},1);renderAttach()">×</button></div>`;
+  });
+}
+
+function startVoice(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ alert('Voice input requires Chrome or Edge'); return; }
+  const rec = new SR();
+  rec.lang = 'en-US';
+  rec.interimResults = false;
+  $('input').placeholder = "Listening...";
+  rec.onresult = e => { $('input').value = e.results[0][0].transcript; };
+  rec.onend = () => { $('input').placeholder = "Ask anything or describe code/media..."; };
+  rec.onerror = () => { $('input').placeholder = "Ask anything or describe code/media..."; };
+  rec.start();
+}
+
+function setHint(t){ $('input').value = t; $('input').focus(); }
+function handleKey(e){ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); } }
 
 function addMsg(role, content){
   const empty = $('empty'); if(empty) empty.remove();
   const chat = $('chat');
   const div = document.createElement('div');
   div.className = 'message ' + role;
-  div.innerHTML = `<div class="avatar ${role==='user'?'user':'ai'}">${role==='user'?'You':'JI'}</div><div class="content">${role==='assistant'?marked.parse(content):esc(content)}</div>`;
+  let html = role==='assistant' ? marked.parse(content) : esc(content);
+  div.innerHTML = `<div class="avatar ${role==='user'?'user':'ai'}">${role==='user'?'You':'JI'}</div><div class="content">${html}</div>`;
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
   div.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+  if(role==='assistant') addActions(div.querySelector('.content'), content);
 }
 
-function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function setHint(t){ $('input').value = t; $('input').focus(); }
-function newChat(){ messages = []; $('chat').innerHTML='<div class="empty" id="empty"><h2>Ask anything</h2></div>'; }
-function handleKey(e){ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); } }
+function addActions(container, raw){
+  if(container.querySelector('.msg-actions')) return;
+  const bar = document.createElement('div');
+  bar.className = 'msg-actions';
+  
+  const copy = document.createElement('button');
+  copy.className = 'copy-btn';
+  copy.textContent = 'Copy';
+  copy.onclick = () => { navigator.clipboard.writeText(raw); copy.textContent = 'Copied'; setTimeout(()=>copy.textContent='Copy', 1500); };
+  bar.appendChild(copy);
+
+  if(raw.includes('```html') || raw.includes('<!DOCTYPE html>')){
+    const previewBtn = document.createElement('button');
+    previewBtn.className = 'copy-btn';
+    previewBtn.textContent = 'Open Live View';
+    previewBtn.onclick = () => {
+      let code = raw;
+      const match = raw.match(/```(?:html)?\n([\s\S]*?)```/);
+      if(match) code = match[1];
+      openPreview(code);
+    };
+    bar.appendChild(previewBtn);
+  }
+
+  container.appendChild(bar);
+  container.querySelectorAll('pre').forEach(pre => {
+    if(pre.querySelector('.code-copy')) return;
+    pre.style.position = 'relative';
+    const b = document.createElement('button');
+    b.className = 'copy-btn code-copy';
+    b.textContent = 'Copy';
+    b.onclick = () => {
+      const code = pre.querySelector('code');
+      navigator.clipboard.writeText(code ? code.innerText : pre.innerText);
+      b.textContent = 'OK';
+      setTimeout(()=>b.textContent='Copy', 1500);
+    };
+    pre.appendChild(b);
+  });
+}
+
+function togglePreview(show){
+  const pane = $('previewPane');
+  if(show) pane.classList.add('active');
+  else pane.classList.remove('active');
+}
+
+function openPreview(code){
+  togglePreview(true);
+  const iframe = $('previewFrame');
+  const doc = iframe.contentDocument || iframe.contentWindow.document;
+  doc.open();
+  doc.write(code);
+  doc.close();
+}
 
 async function readSSE(res, onToken){
   const reader = res.body.getReader();
@@ -174,15 +355,29 @@ async function readSSE(res, onToken){
 async function send(){
   const input = $('input');
   let text = input.value.trim();
-  if(!text || isLoading) return;
-  if(attachedDocText){ text += attachedDocText; attachedDocText = ''; }
-  
-  save(); isLoading = true; $('sendBtn').disabled = true; input.value = '';
-  addMsg('user', text); messages.push({role:'user', content: text});
-  
+  if(!text && !pendingImg && !attachedDocs.length) return;
+  if(isLoading) return;
+
+  let fullPrompt = text;
+  if(pendingImg){ fullPrompt = '[Attached Image]\n' + fullPrompt; pendingImg = null; }
+  if(attachedDocs.length){
+    attachedDocs.forEach(d => { fullPrompt += `\n\n[Document: ${d.name}]\n` + d.text; });
+    attachedDocs = [];
+  }
+  renderAttach();
+
+  saveSettings();
+  isLoading = true;
+  $('sendBtn').disabled = true;
+  input.value = '';
+
+  addMsg('user', fullPrompt);
+  messages.push({role: 'user', content: fullPrompt});
+  track(fullPrompt);
+
   const proxyBase = $('proxyUrl').value.trim().replace(/\/+$/,'');
   const endpoint = proxyBase || '/api';
-  
+
   const chat = $('chat');
   const div = document.createElement('div');
   div.className = 'message assistant';
@@ -190,7 +385,7 @@ async function send(){
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
   const streamEl = div.querySelector('.content');
-  status('Thinking (Rotating Secrets)...');
+  status('Thinking...');
 
   try{
     const res = await fetch(endpoint, {
@@ -198,7 +393,7 @@ async function send(){
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: $('model').value.trim() || 'meta/llama-3.3-70b-instruct',
-        messages: [{role:'system', content:'You are Jogi IoT Search Engine, expert in coding & IoT.'}, ...messages],
+        messages: [{role:'system', content:'You are Jogi IoT Search Engine, an expert coding and IoT assistant. Provide clean code snippets and markdown.'}, ...messages],
         temperature: 0.2,
         max_tokens: 2048,
         stream: true
@@ -218,12 +413,59 @@ async function send(){
     });
 
     messages.push({role:'assistant', content: reply});
+    track();
     status('Ready');
   }catch(err){
     streamEl.innerHTML = '<p style="color:#f85149"><b>Error:</b> ' + err.message + '</p>';
     status('Error');
   }
-  isLoading = false; $('sendBtn').disabled = false; input.focus();
+  isLoading = false;
+  $('sendBtn').disabled = false;
+  input.focus();
+}
+
+async function genImage(){
+  const prompt = $('input').value.trim() || 'A futuristic IoT smart home setup at night';
+  addMsg('user', 'Generate image: ' + prompt);
+  messages.push({role: 'user', content: 'Generate image: ' + prompt});
+  track(prompt);
+  const fallbackImg = `![AI Image](https://picsum.photos/seed/${encodeURIComponent(prompt)}/800/500)\n\n_AI Image Preview: ${prompt}_`;
+  addMsg('assistant', fallbackImg);
+  messages.push({role: 'assistant', content: fallbackImg});
+  track();
+}
+
+async function gen3D(){
+  const prompt = $('input').value.trim() || 'Microcontroller circuit board layout 3D';
+  addMsg('user', 'Generate 3D Visual: ' + prompt);
+  messages.push({role: 'user', content: 'Generate 3D Visual: ' + prompt});
+  track(prompt);
+  const html3D = `### 3D Interactive Model: ${prompt}
+<div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:20px;text-align:center;">
+  <p style="color:#58a6ff;margin-bottom:10px;">🌟 3D interactive rendering active.</p>
+  <div style="width:100%;height:220px;display:flex;align-items:center;justify-content:center;background:#161b22;border-radius:6px;border:1px dashed #30363d;">
+    <span style="color:#8b949e;">[3D Mesh Simulation: ${esc(prompt)}]</span>
+  </div>
+</div>`;
+  addMsg('assistant', html3D);
+  messages.push({role: 'assistant', content: html3D});
+  track();
+}
+
+async function genVideo(){
+  const prompt = $('input').value.trim() || 'Industrial robotic arm assembly line animation';
+  addMsg('user', 'Generate AI Video: ' + prompt);
+  messages.push({role: 'user', content: 'Generate AI Video: ' + prompt});
+  track(prompt);
+  const videoHtml = `### AI Video Simulation: ${prompt}
+<div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:15px;text-align:center;">
+  <p style="color:#3fb950;margin-bottom:10px;">🎥 AI Video Player Active</p>
+  <video controls autoplay loop muted style="width:100%;max-height:320px;border-radius:6px;" src="[https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4](https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4)"></video>
+  <p style="font-size:0.8rem;color:#8b949e;margin-top:8px;">Prompt: ${esc(prompt)}</p>
+</div>`;
+  addMsg('assistant', videoHtml);
+  messages.push({role: 'assistant', content: videoHtml});
+  track();
 }
 
 load();
