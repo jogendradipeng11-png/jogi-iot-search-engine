@@ -10,7 +10,6 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // Return status page on GET requests so visiting the URL directly works
     if (request.method === "GET") {
       return new Response("Jogi IoT Search Engine Worker Active & Rotating", {
         status: 200,
@@ -18,7 +17,7 @@ export default {
       });
     }
 
-    if (request.method === "POST") {
+    if (request.method === "POST" || request.method === "PUT" || request.method === "PATCH") {
       try {
         let body;
         try {
