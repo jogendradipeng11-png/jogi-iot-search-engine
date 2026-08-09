@@ -2,7 +2,6 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Handle CORS preflight requests
     if (request.method === "OPTIONS") {
       return new Response(null, {
         headers: {
@@ -16,10 +15,7 @@ export default {
     if (request.method === "POST" && (url.pathname === "/api" || url.pathname === "/api/search")) {
       try {
         const body = await request.json();
-        
-        // Gather keys from environment secrets (supports JOGI_KEYS as comma-separated list or single secret)
         let keysString = env.JOGI_KEYS || "";
-        // If you set multiple secrets in Wrangler, you can also check env.JOGI_KEY_2, etc.
         let keyPool = keysString.split(/[\n,;]+/).map(k => k.trim()).filter(Boolean);
 
         if (keyPool.length === 0) {
@@ -32,11 +28,8 @@ export default {
         let upstreamRes = null;
         let lastError = null;
 
-        // Continuous rotation loop across backend secret keys
         for (let i = 0; i < keyPool.length; i++) {
           const currentKey = keyPool[i];
-          
-          // Determine provider based on key format or default to NVIDIA/OpenRouter endpoint
           let targetUrl = "https://integrate.api.nvidia.com/v1/chat/completions";
           if (currentKey.startsWith("gsk_")) targetUrl = "https://api.groq.com/openai/v1/chat/completions";
           else if (currentKey.startsWith("AIza")) targetUrl = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
@@ -52,7 +45,6 @@ export default {
           });
 
           if (upstreamRes.ok) {
-            // Stream the successful response back to client
             return new Response(upstreamRes.body, {
               status: 200,
               headers: {
@@ -63,19 +55,17 @@ export default {
             });
           }
 
-          // If rate-limited (429), catch and rotate to next key in secret pool
           if (upstreamRes.status === 429) {
             lastError = "Rate limited, rotating key...";
             continue;
           } else {
             const errText = await upstreamRes.text();
             lastError = `Upstream error ${upstreamRes.status}: ${errText}`;
-            // If it's a bad key, move to next
             if (upstreamRes.status === 401 || upstreamRes.status === 403) continue;
           }
         }
 
-        return new Response(JSON.stringify({ error: "All worker secret keys exhausted or rate-limited. " + lastError }), {
+        return new Response(JSON.stringify({ error: "All worker secret keys exhausted. " + lastError }), {
           status: 429,
           headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
         });
