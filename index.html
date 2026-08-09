@@ -25,13 +25,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 .settings{border-top:1px solid var(--border);padding-top:14px;font-size:.85rem;overflow-y:auto;max-height:55vh}
 .settings label{display:block;margin-bottom:6px;color:var(--muted)}
 .settings input,.settings select,.settings textarea{width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:6px;margin-bottom:12px;font-size:.85rem}
-.settings textarea{min-height:64px;max-height:130px;font-family:monospace;resize:vertical}
-#keyList{font-size:.74rem;margin-bottom:10px;max-height:160px;overflow-y:auto}
-.krow{display:flex;align-items:center;gap:6px;padding:3px 0;color:var(--muted);font-family:monospace}
-.kb{padding:1px 7px;border-radius:10px;font-size:.64rem;font-weight:600}
-.kb.ok{background:#23863633;color:var(--ok)}.kb.limited{background:#d2992233;color:#d29922}.kb.invalid{background:#f8514933;color:#f85149}
-.kreq{margin-left:auto}
-.reset-btn{width:100%;background:var(--card);border:1px solid var(--border);color:var(--muted);padding:6px;border-radius:6px;cursor:pointer;font-size:.78rem;margin-bottom:12px}
 .main{flex:1;display:flex;flex-direction:column;min-width:0}
 .header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .header h1{font-size:1.1rem;font-weight:600}
@@ -46,15 +39,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 .content pre{background:#0d1117;border-radius:8px;padding:14px;overflow-x:auto;margin:12px 0;position:relative}
 .content code{font-family:"SF Mono","Fira Code",Consolas,monospace;font-size:.88rem}
 .content p{margin-bottom:10px}.content p:last-child{margin-bottom:0}
-.content img{max-width:100%;border-radius:8px;margin:8px 0}
 .input-area{padding:16px 24px 24px;border-top:1px solid var(--border)}
 .input-box{max-width:800px;margin:0 auto;position:relative}
-#input{width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);padding:14px 50px 14px 92px;border-radius:12px;resize:none;font-size:1rem;line-height:1.5;min-height:56px;max-height:160px;outline:none;font-family:inherit}
+#input{width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);padding:14px 50px 14px 50px;border-radius:12px;resize:none;font-size:1rem;line-height:1.5;min-height:56px;max-height:160px;outline:none;font-family:inherit}
 #input:focus{border-color:var(--accent)}
 .send-btn{position:absolute;right:10px;bottom:10px;background:var(--accent);border:none;width:36px;height:36px;border-radius:8px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .send-btn:disabled{background:var(--border);cursor:not-allowed}
-.attach-btn,.mic-btn{position:absolute;bottom:10px;background:transparent;border:none;color:var(--muted);font-size:1.15rem;cursor:pointer;width:36px;height:36px;border-radius:8px}
-.attach-btn{left:8px}.mic-btn{left:48px}
+.attach-btn{position:absolute;left:10px;bottom:10px;background:transparent;border:none;color:var(--muted);font-size:1.15rem;cursor:pointer;width:36px;height:36px;border-radius:8px}
 .hints{max-width:800px;margin:12px auto 0;display:flex;gap:8px;flex-wrap:wrap;font-size:.8rem}
 .hint{background:var(--card);border:1px solid var(--border);padding:6px 12px;border-radius:20px;cursor:pointer;color:var(--muted)}
 .hint:hover{border-color:var(--accent);color:var(--text)}
@@ -64,266 +55,178 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 @keyframes bounce{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
 .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--muted);padding:40px}
 .empty h2{font-size:1.8rem;color:var(--text);margin-bottom:12px}
-.msg-actions{margin-top:8px;text-align:right}
 .copy-btn{background:var(--card);border:1px solid var(--border);color:var(--muted);padding:3px 10px;border-radius:6px;font-size:.72rem;cursor:pointer;margin-left:4px}
-.copy-btn:hover{color:var(--text);border-color:var(--accent)}
 .code-copy{position:absolute;top:6px;right:6px}
-.attach-row{max-width:800px;margin:0 auto 8px;display:flex;gap:8px;flex-wrap:wrap}
-.attach-chip{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:4px 12px;font-size:.78rem;color:var(--muted)}
-.attach-chip img{width:22px;height:22px;border-radius:4px;object-fit:cover}
-.gen-btn{background:linear-gradient(90deg,#58a6ff33,#bc8cff33);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:20px;cursor:pointer;font-size:.8rem}
-.gen-btn:hover{border-color:var(--accent)}
 @media(max-width:768px){.sidebar{display:none}}
 </style>
 </head>
 <body>
 <div class="sidebar">
   <div class="logo">Jogi <span>IoT</span></div>
-  <div class="tagline">AI Search Engine - rotates ALL your free APIs</div>
+  <div class="tagline">Server-Rotated Worker Secrets Engine</div>
   <button class="new-chat" onclick="newChat()">+ New Search</button>
   <div class="history" id="history"></div>
   <div class="settings">
-    <label>Backend</label>
-    <select id="backend" onchange="save()">
-      <option value="pool">All APIs (auto-rotate)</option>
-      <option value="ollama">Ollama (Local)</option>
-    </select>
     <label>Default Model</label>
-    <input type="text" id="model" placeholder="meta/llama-3.3-70b-instruct" onchange="save()">
-    <label>NVIDIA API Keys (one per line, up to 10)</label>
-    <textarea id="nvidiaKeys" placeholder="nvapi-xxxxxxxx" spellcheck="false" onchange="save()"></textarea>
-    <label>More APIs (provider|key|model)</label>
-    <textarea id="pool" placeholder="groq|gsk_xxx|llama-3.3-70b" spellcheck="false" onchange="save()"></textarea>
-    <div id="keyList"></div>
-    <button class="reset-btn" onclick="resetPool()">Reset API States</button>
-    <label>Proxy URL (for GitHub Pages)</label>
+    <input type="text" id="model" value="meta/llama-3.3-70b-instruct" onchange="save()">
+    <label>Worker Proxy URL</label>
     <input type="text" id="proxyUrl" placeholder="https://your-worker.workers.dev/" onchange="save()">
-    <label>Ollama URL</label>
-    <input type="text" id="ollamaUrl" value="http://localhost:11434" onchange="save()">
-    <button class="reset-btn" onclick="clearAll()" style="color:#f85149;border-color:#f8514944">Clear All Data</button>
   </div>
 </div>
 <div class="main">
   <div class="header">
     <h1>Jogi IoT Search Engine</h1>
-    <div style="display:flex;align-items:center;gap:10px">
-      <button class="gen-btn" onclick="genImage()">Image</button>
-      <button class="copy-btn" onclick="toggleTheme()" id="themeBtn">Dark</button>
-      <div class="status"><div class="dot"></div><span id="statusText">Ready</span></div>
-    </div>
+    <div class="status"><div class="dot"></div><span id="statusText">Ready</span></div>
   </div>
   <div class="chat-container" id="chat">
     <div class="empty" id="empty">
       <h2>Ask anything - code, IoT, docs</h2>
-      <p>Add API keys in sidebar, or leave empty and use Proxy URL to a worker with JOGI_KEYS secret.</p>
+      <p>Requests are automatically rotated across your worker secrets seamlessly.</p>
     </div>
   </div>
   <div class="input-area">
-    <div class="attach-row" id="attachRow"></div>
     <div class="input-box">
       <textarea id="input" rows="1" placeholder="Ask anything..." onkeydown="handleKey(event)"></textarea>
       <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="Attach">+</button>
-      <button class="mic-btn" onclick="startVoice()" title="Voice">Mic</button>
-      <input type="file" id="fileInput" accept="image/*,.txt,.md,.csv,.json,.js,.py,.html" multiple style="display:none" onchange="handleFiles(this)">
+      <input type="file" id="fileInput" accept=".txt,.md,.json,.js,.py" style="display:none" onchange="handleFiles(this)">
       <button class="send-btn" id="sendBtn" onclick="send()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
       </button>
     </div>
     <div class="hints">
-      <div class="hint" onclick="setHint('Sing me a song')">Sing a song</div>
       <div class="hint" onclick="setHint('Arduino DHT11 code')">Arduino DHT11</div>
       <div class="hint" onclick="setHint('MQTT vs HTTP')">MQTT vs HTTP</div>
-      <div class="hint" onclick="setHint('React infinite scroll hook')">React scroll</div>
-      <div class="hint" onclick="setHint('Debug TypeError')">Debug error</div>
     </div>
   </div>
 </div>
 <script>
-// Inline dynamic PWA assets creation via Blob URLs
-const manifestData = {name:"Jogi IoT Search Engine",short_name:"JogiIoT",start_url:".",display:"standalone",background_color:"#0f1117",theme_color:"#0f1117",icons:[{src:"https://raw.githubusercontent.com/jogendradipeng11-png/jogi-iot-search-engine/main/icon-192.png",sizes:"192x192",type:"image/png"},{src:"https://raw.githubusercontent.com/jogendradipeng11-png/jogi-iot-search-engine/main/icon-512.png",sizes:"512x512",type:"image/png"}]};
+const manifestData = {name:"Jogi IoT Search Engine",short_name:"JogiIoT",start_url:".",display:"standalone",background_color:"#0f1117",theme_color:"#0f1117"};
 document.getElementById('dynamicManifest').href = URL.createObjectURL(new Blob([JSON.stringify(manifestData)],{type:'application/json'}));
-document.getElementById('dynamicAppleIcon').href = "https://raw.githubusercontent.com/jogendradipeng11-png/jogi-iot-search-engine/main/icon-192.png";
 
 const $ = id => document.getElementById(id);
-let messages = [], isLoading = false, pool = [], currentIndex = -1;
-const COOLDOWN = 10 * 60 * 1000, DEFAULT_MODEL = 'meta/llama-3.3-70b-instruct';
-const PRESETS = {
-  nvidia:{name:'NVIDIA',url:'',model:DEFAULT_MODEL},
-  groq:{name:'Groq',url:'https://api.groq.com/openai/v1/chat/completions',model:'llama-3.3-70b-versatile'},
-  gemini:{name:'Gemini',url:'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',model:'gemini-2.0-flash'},
-  openrouter:{name:'OpenRouter',url:'https://openrouter.ai/api/v1/chat/completions',model:'meta-llama/llama-3.3-70b-instruct:free'},
-  mistral:{name:'Mistral',url:'https://api.mistral.ai/v1/chat/completions',model:'mistral-small-latest'},
-  cerebras:{name:'Cerebras',url:'https://api.cerebras.ai/v1/chat/completions',model:'llama-3.3-70b'},
-  sambanova:{name:'SambaNova',url:'https://api.sambanova.ai/v1/chat/completions',model:'Meta-Llama-3.3-70B-Instruct'},
-  together:{name:'Together',url:'https://api.together.xyz/v1/chat/completions',model:'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free'},
-  github:{name:'GitHub',url:'https://models.github.ai/inference/chat/completions',model:'openai/gpt-4o-mini'},
-  huggingface:{name:'HuggingFace',url:'https://router.huggingface.co/v1/chat/completions',model:'meta-llama/Llama-3.1-8B-Instruct'},
-  cohere:{name:'Cohere',url:'https://api.cohere.ai/compatibility/v1/chat/completions',model:'command-r-plus'}
-};
-
-function detectKey(k){if(k.startsWith('nvapi-'))return'nvidia';if(k.startsWith('gsk_'))return'groq';if(k.startsWith('AIza'))return'gemini';if(k.startsWith('sk-or-'))return'openrouter';if(k.startsWith('hf_'))return'huggingface';if(k.startsWith('ghp_'))return'github';if(k.startsWith('csk-'))return'cerebras';return null}
+let messages = [], isLoading = false, attachedDocText = '';
 
 function load(){
-  let b=localStorage.getItem('jogiBackend')||'pool';
-  $('backend').value=b;
-  $('model').value=localStorage.getItem('jogiModel')||DEFAULT_MODEL;
-  $('nvidiaKeys').value=localStorage.getItem('jogiKeys')||'';
-  $('pool').value=localStorage.getItem('jogiPool')||'';
-
-  let proxy=localStorage.getItem('jogiProxyUrl')||'';
-  if(!proxy&&location.hostname.includes('github.io')){
-    proxy='https://jogi-iot-search-engine.jogendra-dipeng11.workers.dev/';
-    localStorage.setItem('jogiProxyUrl',proxy);
+  $('model').value = localStorage.getItem('jogiModel') || 'meta/llama-3.3-70b-instruct';
+  let proxy = localStorage.getItem('jogiProxyUrl') || '';
+  if(!proxy && location.hostname.includes('github.io')){
+    proxy = 'https://jogi-iot-search-engine.jogendra-dipeng11.workers.dev/';
+    localStorage.setItem('jogiProxyUrl', proxy);
   }
-  $('proxyUrl').value=proxy;
-
-  $('ollamaUrl').value=localStorage.getItem('jogiOllamaUrl')||'http://localhost:11434';
-  buildPool();renderHistory();
+  $('proxyUrl').value = proxy;
 }
 function save(){
-  localStorage.setItem('jogiBackend',$('backend').value);
-  localStorage.setItem('jogiModel',$('model').value);
-  localStorage.setItem('jogiKeys',$('nvidiaKeys').value);
-  localStorage.setItem('jogiPool',$('pool').value);
-  localStorage.setItem('jogiProxyUrl',$('proxyUrl').value);
-  localStorage.setItem('jogiOllamaUrl',$('ollamaUrl').value);
-  buildPool();
+  localStorage.setItem('jogiModel', $('model').value);
+  localStorage.setItem('jogiProxyUrl', $('proxyUrl').value);
 }
-function clearAll(){if(!confirm('Clear all data?'))return;localStorage.clear();location.reload()}
+function status(t){ $('statusText').textContent = t; }
 
-function buildPool(){
-  const model=$('model').value.trim()||DEFAULT_MODEL;
-  const entries=$('nvidiaKeys').value.split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean).slice(0,10).map(k=>({id:'NVIDIA|'+k,label:'NVIDIA',key:k,model,target:null}));
-  $('pool').value.split('\n').map(s=>s.trim()).filter(l=>l&&!l.startsWith('#')).forEach(line=>{
-    const parts=line.split('|').map(s=>s.trim());if(!parts[0])return;
-    const p=PRESETS[parts[0].toLowerCase()];
-    if(p){entries.push({id:p.name+'|'+parts[1],label:p.name,key:parts[1]||'',model:parts[2]||p.model,target:p.url||null});return}
-    if(parts[0].startsWith('http')){let host='custom';try{host=new URL(parts[0]).hostname}catch(e){}entries.push({id:parts[0]+'|'+parts[1],label:host,key:parts[1]||'',model:parts[2]||model,target:parts[0]});return}
-    const d=detectKey(line);if(d){const p=PRESETS[d];entries.push({id:p.name+'|'+line,label:p.name,key:line,model:p.model,target:p.url||null})}
-  });
-  let saved={};try{saved=JSON.parse(localStorage.getItem('jogiKeyStates')||'{}')}catch(e){}
-  pool=entries.map(e=>{const prev=saved[e.id]||saved[e.key];return Object.assign(e,prev?{requests:prev.requests||0,state:prev.state||'active',exhaustedUntil:prev.exhaustedUntil||0}:{requests:0,state:'active',exhaustedUntil:0})});
-  if(currentIndex>=pool.length)currentIndex=-1;persist();renderPool();
+function handleFiles(input){
+  const file = input.files[0];
+  if(!file)return;
+  const r = new FileReader();
+  r.onload = () => { attachedDocText = '\n\n[Attached File: '+file.name+']\n'+r.result; alert('File attached successfully!'); };
+  r.readAsText(file);
 }
-function persist(){const obj={};pool.forEach(e=>{obj[e.id]={requests:e.requests,state:e.state,exhaustedUntil:e.exhaustedUntil}});localStorage.setItem('jogiKeyStates',JSON.stringify(obj))}
-function usable(e){if(e.state==='invalid')return false;if(e.state==='limited'&&Date.now()<e.exhaustedUntil)return false;return true}
-function pickNext(){if(!pool.length)return null;for(let i=0;i<pool.length;i++){currentIndex=(currentIndex+1)%pool.length;const e=pool[currentIndex];if(usable(e))return e}return null}
-function mask(k){return k&&k.length>8?'...'+k.slice(-4):'...'}
-function renderPool(){const el=$('keyList');if(!pool.length){el.innerHTML='<div style="color:var(--muted);font-size:.75rem">No APIs - add keys or use Proxy URL</div>';return}el.innerHTML=pool.map((e,i)=>{const ok=usable(e);const badge=e.state==='invalid'?'<span class="kb invalid">invalid</span>':(!ok?'<span class="kb limited">cooldown</span>':'<span class="kb ok">active</span>');const cur=i===currentIndex?' <':'';return`<div class="krow">#${i+1} ${e.label} ${mask(e.key)} <span style="opacity:.6">${e.model}</span> ${badge}<span class="kreq">${e.requests}${cur}</span></div>`}).join('')}
-function resetPool(){pool.forEach(e=>{e.state='active';e.exhaustedUntil=0});persist();renderPool();status('Ready')}
-function status(t){$('statusText').textContent=t}
-function summary(){if(!pool.length)return'add APIs or Proxy URL';const c=pool.filter(e=>!usable(e)).length;const r=pool.reduce((a,e)=>a+e.requests,0);return`api ${Math.max(currentIndex,0)+1}/${pool.length} | ${r} req | ${c} cooling`}
 
-let conversations=[],activeId=null;
-try{conversations=JSON.parse(localStorage.getItem('jogiChats')||'[]')}catch(e){}
-function saveChats(){localStorage.setItem('jogiChats',JSON.stringify(conversations.slice(-30)))}
-function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function renderHistory(){const el=$('history');if(!conversations.length){el.innerHTML='<div style="color:var(--muted);font-size:.78rem;padding:4px">No searches yet</div>';return}el.innerHTML=conversations.slice().reverse().map(c=>`<div class="history-item ${c.id===activeId?'active':''}" onclick="loadChat(${c.id})">${esc(c.title)}</div>`).join('')}
-function track(title){if(!activeId){activeId=Date.now();conversations.push({id:activeId,title:(title||'search').slice(0,42),messages:[]});if(conversations.length>30)conversations=conversations.slice(-30)}const conv=conversations.find(c=>c.id===activeId);if(conv)conv.messages=messages.slice(-40);saveChats();renderHistory()}
-function loadChat(id){const conv=conversations.find(c=>c.id===id);if(!conv)return;activeId=id;messages=conv.messages.slice();$('chat').innerHTML='';messages.forEach(m=>addMsg(m.role,m.content));renderHistory()}
+function addMsg(role, content){
+  const empty = $('empty'); if(empty) empty.remove();
+  const chat = $('chat');
+  const div = document.createElement('div');
+  div.className = 'message ' + role;
+  div.innerHTML = `<div class="avatar ${role==='user'?'user':'ai'}">${role==='user'?'You':'JI'}</div><div class="content">${role==='assistant'?marked.parse(content):esc(content)}</div>`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  div.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+}
 
-let pendingImg=null,attachedDocs=[];
-function loadImg(file,cb){const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{let w=img.width,h=img.height;const max=1024;if(w>max||h>max){const r=max/Math.max(w,h);w=Math.round(w*r);h=Math.round(h*r)}const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h);cb({name:file.name,dataUrl:cv.toDataURL('image/jpeg',.85)})};img.src=r.result};r.readAsDataURL(file)}
-function handleFiles(input){const files=Array.from(input.files||[]);input.value='';files.forEach(f=>{if(f.type.startsWith('image/')){loadImg(f,r=>{pendingImg=r;renderAttach()})}else{const r=new FileReader();r.onload=()=>{attachedDocs.push({name:f.name,text:String(r.result).slice(0,20000)});renderAttach()};r.readAsText(f)}})}
-function renderAttach(){const row=$('attachRow');row.innerHTML='';if(pendingImg)row.innerHTML+=`<div class="attach-chip"><img src="${pendingImg.dataUrl}"/><span>${pendingImg.name}</span><button onclick="pendingImg=null;renderAttach()">x</button></div>`;attachedDocs.forEach((d,i)=>{row.innerHTML+=`<div class="attach-chip"><span>${d.name}</span><button onclick="attachedDocs.splice(${i},1);renderAttach()">x</button></div>`})}
-function startVoice(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('Voice input needs Chrome/Edge');return}const rec=new SR();rec.lang='en-US';rec.interimResults=false;$('micBtn').textContent='...';rec.onresult=e=>{$('input').value=e.results[0][0].transcript};rec.onend=()=>{$('micBtn').textContent='Mic'};rec.onerror=()=>{$('micBtn').textContent='Mic'};rec.start()}
-function toggleTheme(){document.body.classList.toggle('light');const light=document.body.classList.contains('light');localStorage.setItem('jogiTheme',light?'light':'dark');$('themeBtn').textContent=light?'Light':'Dark'}
-function setHint(t){$('input').value=t;$('input').focus()}
-function newChat(){messages=[];activeId=null;renderHistory();$('chat').innerHTML='<div class="empty" id="empty"><h2>Ask anything - code, IoT, docs</h2><p>Add API keys in sidebar, or leave empty and use Proxy URL to a worker with JOGI_KEYS secret.</p></div>'}
-function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}}
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function setHint(t){ $('input').value = t; $('input').focus(); }
+function newChat(){ messages = []; $('chat').innerHTML='<div class="empty" id="empty"><h2>Ask anything</h2></div>'; }
+function handleKey(e){ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); } }
 
-function addMsg(role,content){const empty=$('empty');if(empty)empty.remove();const chat=$('chat');const div=document.createElement('div');div.className='message '+role;let html=content;if(role==='assistant')html=marked.parse(content);div.innerHTML=`<div class="avatar ${role==='user'?'user':'ai'}">${role==='user'?'You':'JI'}</div><div class="content">${html}</div>`;chat.appendChild(div);chat.scrollTop=chat.scrollHeight;div.querySelectorAll('pre code').forEach(el=>hljs.highlightElement(el));if(role==='assistant')addActions(div.querySelector('.content'),content)}
-function addActions(container,raw){if(container.querySelector('.msg-actions'))return;const bar=document.createElement('div');bar.className='msg-actions';const copy=document.createElement('button');copy.className='copy-btn';copy.textContent='Copy';copy.onclick=()=>{navigator.clipboard.writeText(raw);copy.textContent='Copied';setTimeout(()=>copy.textContent='Copy',1500)};bar.appendChild(copy);const speak=document.createElement('button');speak.className='copy-btn';speak.textContent='Speak';speak.onclick=()=>{if('speechSynthesis'in window){const u=new SpeechSynthesisUtterance(raw.replace(/[#*`>|_~]/g,' ').replace(/\s+/g,' ').slice(0,1500));window.speechSynthesis.speak(u)}};bar.appendChild(speak);const dl=document.createElement('button');dl.className='copy-btn';dl.textContent='Save';dl.onclick=()=>{const blob=new Blob([raw],{type:'text/markdown'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='jogi-answer.md';a.click()};bar.appendChild(dl);container.appendChild(bar);container.querySelectorAll('pre').forEach(pre=>{if(pre.querySelector('.code-copy'))return;pre.style.position='relative';const b=document.createElement('button');b.className='copy-btn code-copy';b.textContent='Copy';b.onclick=()=>{const code=pre.querySelector('code');navigator.clipboard.writeText(code?code.innerText:pre.innerText);b.textContent='OK';setTimeout(()=>b.textContent='Copy',1500)};pre.appendChild(b)})}
-function showTyping(){const chat=$('chat');const div=document.createElement('div');div.className='message assistant';div.id='typing';div.innerHTML='<div class="avatar ai">JI</div><div class="content"><div class="typing"><span></span><span></span><span></span></div></div>';chat.appendChild(div);chat.scrollTop=chat.scrollHeight}
-function removeTyping(){const t=$('typing');if(t)t.remove()}
-
-async function readSSE(res,onToken){const reader=res.body.getReader();const decoder=new TextDecoder();let buffer='',full='';while(true){const{done,value}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});const lines=buffer.split('\n');buffer=lines.pop()||'';for(const line of lines){const t=line.trim();if(!t.startsWith('data:'))continue;const payload=t.slice(5).trim();if(!payload||payload==='[DONE]')continue;try{const j=JSON.parse(payload);const delta=(j.choices&&j.choices[0]&&j.choices[0].delta&&j.choices[0].delta.content)||'';if(delta){full+=delta;if(onToken)onToken(full)}}catch(e){}}}if(!full)throw new Error('Empty response');return full}
-
-async function callPool(prompt,onToken,image){
-  const proxyBase=$('proxyUrl').value.trim().replace(/\/+$/,'');
-  const endpoint=proxyBase||'/api';
-  const hasClientKeys=pool.length>0&&pool.some(e=>e.key);
-
-  if(!hasClientKeys&&proxyBase){
-    status('Thinking...');
-    let res;
-    try{res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:$('model').value.trim()||DEFAULT_MODEL,messages:[{role:'system',content:'You are Jogi IoT Search Engine, an expert coding and IoT assistant. Give clear, practical answers with code examples. Format code with markdown.'},...messages,{role:'user',content:image?[{type:'text',text:prompt},{type:'image_url',image_url:{url:image}}]:prompt}],temperature:.2,max_tokens:2048,stream:true})})}
-    catch(e){throw new Error('Failed to reach proxy at '+endpoint)}
-    if(res.ok)return await readSSE(res,onToken);
-    let detail='';try{const j=await res.json();detail=j.error||j.detail||JSON.stringify(j)}catch(e){detail=res.statusText}
-    if(res.status===404)throw new Error('No proxy at '+endpoint);
-    if(res.status===429||res.status===503)throw new Error('All worker keys rate-limited. Wait for cooldown.');
-    throw new Error('Worker error '+res.status+': '+detail);
+async function readSSE(res, onToken){
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '', full = '';
+  while(true){
+    const {done, value} = await reader.read();
+    if(done) break;
+    buffer += decoder.decode(value, {stream: true});
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+    for(const line of lines){
+      const t = line.trim();
+      if(!t.startsWith('data:')) continue;
+      const payload = t.slice(5).trim();
+      if(!payload || payload === '[DONE]') continue;
+      try{
+        const j = JSON.parse(payload);
+        const delta = (j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content) || '';
+        if(delta){ full += delta; if(onToken) onToken(full); }
+      }catch(e){}
+    }
   }
-
-  if(!pool.length)throw new Error('Add API keys or set Proxy URL');
-  let lastErr=null;
-  for(let attempt=0;attempt<pool.length;attempt++){
-    const e=pickNext();if(!e)break;
-    status('Thinking | '+e.label);
-    const headers={'Content-Type':'application/json'};if(e.key)headers['Authorization']='Bearer '+e.key;if(e.target)headers['X-Proxy-Target']=e.target;
-    let res;
-    try{res=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify({model:e.model,messages:[{role:'system',content:'You are Jogi IoT Search Engine, an expert coding and IoT assistant. Give clear, practical answers with code examples. Format code with markdown.'},...messages,{role:'user',content:image?[{type:'text',text:prompt},{type:'image_url',image_url:{url:image}}]:prompt}],temperature:.2,max_tokens:2048,stream:true})})}
-    catch(e){lastErr=new Error('Network error - check Proxy URL');continue}
-    if(res.ok){e.requests++;e.state='active';e.exhaustedUntil=0;persist();renderPool();return await readSSE(res,onToken)}
-    let detail='';try{const j=await res.json();detail=(j.error&&j.error.message)||j.detail||JSON.stringify(j)}catch(err){detail=res.statusText}
-    if(res.status===429){e.state='limited';e.exhaustedUntil=Date.now()+COOLDOWN;persist();renderPool();lastErr=new Error('Rate limited - auto-recovering');continue}
-    if(res.status===401||res.status===403){e.state='invalid';persist();renderPool();lastErr=new Error(e.label+' key rejected');continue}
-    if(res.status>=500){lastErr=new Error(e.label+' server error '+res.status);continue}
-    throw new Error(e.label+' error '+res.status+': '+detail);
-  }
-  throw lastErr||new Error('No usable APIs');
+  if(!full) throw new Error('Empty response from worker stream.');
+  return full;
 }
 
 async function send(){
-  const input=$('input');const text=input.value.trim();if(!text||isLoading)return;
-  save();isLoading=true;$('sendBtn').disabled=true;input.value='';
-  addMsg('user',text);messages.push({role:'user',content:text});track(text);
-  const image=pendingImg?pendingImg.dataUrl:null;if(pendingImg){pendingImg=null;renderAttach()}
-  if(attachedDocs.length){const docs=attachedDocs.slice();attachedDocs=[];renderAttach();docs.forEach(d=>{const m='[Doc: '+d.name+']\n\n'+d.text;addMsg('user',m);messages.push({role:'user',content:m})})}
-  showTyping();status('Thinking...');
-  let streamEl=null;
+  const input = $('input');
+  let text = input.value.trim();
+  if(!text || isLoading) return;
+  if(attachedDocText){ text += attachedDocText; attachedDocText = ''; }
+  
+  save(); isLoading = true; $('sendBtn').disabled = true; input.value = '';
+  addMsg('user', text); messages.push({role:'user', content: text});
+  
+  const proxyBase = $('proxyUrl').value.trim().replace(/\/+$/,'');
+  const endpoint = proxyBase || '/api';
+  
+  const chat = $('chat');
+  const div = document.createElement('div');
+  div.className = 'message assistant';
+  div.innerHTML = '<div class="avatar ai">JI</div><div class="content"><div class="typing"><span></span><span></span><span></span></div></div>';
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  const streamEl = div.querySelector('.content');
+  status('Thinking (Rotating Secrets)...');
+
   try{
-    const onToken=(accum)=>{if(!streamEl){removeTyping();const chat=$('chat');const div=document.createElement('div');div.className='message assistant';div.innerHTML='<div class="avatar ai">JI</div><div class="content"></div>';chat.appendChild(div);chat.scrollTop=chat.scrollHeight;streamEl=div.querySelector('.content');status('Answering...')}streamEl.innerHTML=marked.parse(accum);$('chat').scrollTop=$('chat').scrollHeight};
-    const reply=await callPool(text,onToken,image);
-    removeTyping();
-    if(streamEl){streamEl.querySelectorAll('pre code').forEach(b=>hljs.highlightElement(b));addActions(streamEl,reply)}
-    else{addMsg('assistant',reply)}
-    messages.push({role:'assistant',content:reply});track();
-    status('Ready | '+summary());
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: $('model').value.trim() || 'meta/llama-3.3-70b-instruct',
+        messages: [{role:'system', content:'You are Jogi IoT Search Engine, expert in coding & IoT.'}, ...messages],
+        temperature: 0.2,
+        max_tokens: 2048,
+        stream: true
+      })
+    });
+
+    if(!res.ok){
+      let errDetail = '';
+      try{ const j = await res.json(); errDetail = j.error || ''; }catch(e){ errDetail = res.statusText; }
+      throw new Error(errDetail || 'Worker HTTP error ' + res.status);
+    }
+
+    const reply = await readSSE(res, (accum) => {
+      status('Answering...');
+      streamEl.innerHTML = marked.parse(accum);
+      chat.scrollTop = chat.scrollHeight;
+    });
+
+    messages.push({role:'assistant', content: reply});
+    status('Ready');
   }catch(err){
-    removeTyping();
-    if(streamEl)streamEl.innerHTML+='<p style="color:#f85149"><b>Error:</b> '+err.message+'</p>';
-    else addMsg('assistant','**Error:** '+err.message);
+    streamEl.innerHTML = '<p style="color:#f85149"><b>Error:</b> ' + err.message + '</p>';
     status('Error');
   }
-  isLoading=false;$('sendBtn').disabled=false;input.focus();
-}
-
-async function genImage(){
-  const prompt=$('input').value.trim()||'A futuristic IoT city at night';
-  if(isLoading)return;isLoading=true;$('sendBtn').disabled=true;
-  addMsg('user','Generate image: '+prompt);messages.push({role:'user',content:'Generate image: '+prompt});
-  showTyping();status('Drawing...');
-  try{
-    const proxyBase=$('proxyUrl').value.trim().replace(/\/+$/,'');
-    const endpoint=proxyBase||'/api';
-    const res=await fetch(endpoint+'/gen',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});
-    const data=await res.json().catch(()=>({}));
-    if(!res.ok||!data.image)throw new Error(data.error||'Image gen failed');
-    removeTyping();
-    addMsg('assistant','![generated](data:image/png;base64,'+data.image+')\n\n_AI image: '+prompt+'_');
-    messages.push({role:'assistant',content:'![generated](data:image/png;base64,'+data.image+')'});track();
-    status('Ready');
-  }catch(err){removeTyping();addMsg('assistant','**Error:** '+err.message);status('Error')}
-  isLoading=false;$('sendBtn').disabled=false;
+  isLoading = false; $('sendBtn').disabled = false; input.focus();
 }
 
 load();
-if('serviceWorker'in navigator&&location.protocol==='https:'){
-  const swCode=`self.addEventListener('fetch',e=>{});`;
-  navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode],{type:'text/javascript'}))).catch(()=>{});
-}
 </script>
 </body>
 </html>
