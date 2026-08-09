@@ -87,7 +87,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
     <label>Default Model</label>
     <input type="text" id="model" value="meta/llama-3.3-70b-instruct" onchange="saveSettings()">
     <label>Worker Proxy URL</label>
-    <input type="text" id="proxyUrl" placeholder="https://your-worker.workers.dev/" onchange="saveSettings()">
+    <input type="text" id="proxyUrl" value="https://jogi-iot-search-engine.jogendra-dipeng11.workers.dev" onchange="saveSettings()">
   </div>
 </div>
 
@@ -155,11 +155,7 @@ function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;
 
 function load(){
   $('model').value = localStorage.getItem('jogiModel') || 'meta/llama-3.3-70b-instruct';
-  let proxy = localStorage.getItem('jogiProxyUrl') || '';
-  if(!proxy && location.hostname.includes('github.io')){
-    proxy = 'https://jogi-iot-search-engine.jogendra-dipeng11.workers.dev/';
-    localStorage.setItem('jogiProxyUrl', proxy);
-  }
+  let proxy = localStorage.getItem('jogiProxyUrl') || 'https://jogi-iot-search-engine.jogendra-dipeng11.workers.dev';
   $('proxyUrl').value = proxy;
   renderHistory();
 }
