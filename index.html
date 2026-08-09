@@ -1,1496 +1,380 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jogi IoT Search Engine – Unlimited AI Search</title>
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#0f1117" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="Jogi IoT" />
-  <link rel="apple-touch-icon" href="icon-192.png" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jogi IoT Search Engine</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f1117">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
   <style>
-    :root {
-      --bg: #0f1117;
-      --sidebar: #161b22;
-      --card: #1c2128;
-      --border: #30363d;
-      --text: #e6edf3;
-      --muted: #8b949e;
-      --accent: #58a6ff;
-      --accent-hover: #79b8ff;
-      --success: #3fb950;
-      --user-bg: #1f6feb22;
-      --ai-bg: #21262d;
-    }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      height: 100vh;
-      display: flex;
-      overflow: hidden;
-    }
-
-    .sidebar {
-      width: 290px;
-      background: var(--sidebar);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      padding: 16px;
-    }
-
-    .logo {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin-bottom: 4px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .logo span { color: var(--accent); }
-    .tagline {
-      font-size: 0.72rem;
-      color: var(--muted);
-      margin-bottom: 16px;
-    }
-
-    .new-chat {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-bottom: 14px;
-      transition: 0.2s;
-    }
-    .new-chat:hover { background: var(--accent-hover); }
-
-    .history {
-      flex: 1;
-      overflow-y: auto;
-      font-size: 0.9rem;
-      min-height: 30px;
-    }
-
-    .history-item {
-      padding: 10px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      color: var(--muted);
-      margin-bottom: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .history-item:hover, .history-item.active {
-      background: var(--card);
-      color: var(--text);
-    }
-
-    .settings {
-      border-top: 1px solid var(--border);
-      padding-top: 14px;
-      font-size: 0.85rem;
-      overflow-y: auto;
-      max-height: 62vh;
-    }
-
-    .settings label {
-      display: block;
-      margin-bottom: 6px;
-      color: var(--muted);
-    }
-
-    .settings select, .settings input {
-      width: 100%;
-      background: var(--card);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 8px;
-      border-radius: 6px;
-      margin-bottom: 12px;
-    }
-
-    .settings textarea {
-      width: 100%;
-      background: var(--card);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 8px;
-      border-radius: 6px;
-      margin-bottom: 8px;
-      min-height: 64px;
-      max-height: 130px;
-      font-size: 0.72rem;
-      font-family: "SF Mono", Consolas, monospace;
-      resize: vertical;
-      line-height: 1.5;
-    }
-
-    #keyList {
-      font-size: 0.74rem;
-      margin-bottom: 10px;
-      max-height: 160px;
-      overflow-y: auto;
-    }
-    .krow {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 3px 0;
-      color: var(--muted);
-      font-family: "SF Mono", Consolas, monospace;
-    }
-    .krow .kmodel {
-      opacity: 0.6;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 90px;
-    }
-    .kb {
-      padding: 1px 7px;
-      border-radius: 10px;
-      font-size: 0.64rem;
-      font-weight: 600;
-      flex-shrink: 0;
-    }
-    .kb.ok { background: #23863633; color: var(--success); }
-    .kb.limited { background: #d2992233; color: #d29922; }
-    .kb.invalid { background: #f8514933; color: #f85149; }
-    .kreq { margin-left: auto; flex-shrink: 0; }
-
-    .reset-btn {
-      width: 100%;
-      background: var(--card);
-      border: 1px solid var(--border);
-      color: var(--muted);
-      padding: 6px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.78rem;
-      margin-bottom: 12px;
-      transition: 0.2s;
-    }
-    .reset-btn:hover { color: var(--text); border-color: var(--accent); }
-
-    .main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-    }
-
-    .header {
-      padding: 16px 24px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .header h1 {
-      font-size: 1.1rem;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    .status {
-      font-size: 0.8rem;
-      color: var(--muted);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      text-align: right;
-    }
-    .status .dot {
-      width: 8px;
-      height: 8px;
-      background: var(--success);
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .chat-container {
-      flex: 1;
-      overflow-y: auto;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .message {
-      max-width: 800px;
-      margin: 0 auto;
-      width: 100%;
-      display: flex;
-      gap: 14px;
-    }
-
-    .avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      flex-shrink: 0;
-      font-size: 0.8rem;
-    }
-    .avatar.user { background: #1f6feb; }
-    .avatar.ai { background: #238636; }
-
-    .content {
-      flex: 1;
-      background: var(--ai-bg);
-      padding: 14px 18px;
-      border-radius: 12px;
-      line-height: 1.6;
-      font-size: 0.95rem;
-      min-width: 0;
-    }
-    .message.user .content {
-      background: var(--user-bg);
-    }
-
-    .content pre {
-      background: #0d1117;
-      border-radius: 8px;
-      padding: 14px;
-      overflow-x: auto;
-      margin: 12px 0;
-    }
-
-    .content code {
-      font-family: "SF Mono", "Fira Code", Consolas, monospace;
-      font-size: 0.88rem;
-    }
-
-    .content p { margin-bottom: 10px; }
-    .content p:last-child { margin-bottom: 0; }
-
-    .input-area {
-      padding: 16px 24px 24px;
-      border-top: 1px solid var(--border);
-    }
-
-    .input-box {
-      max-width: 800px;
-      margin: 0 auto;
-      position: relative;
-    }
-
-    #input {
-      width: 100%;
-      background: var(--card);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 14px 50px 14px 92px;
-      border-radius: 12px;
-      resize: none;
-      font-size: 1rem;
-      line-height: 1.5;
-      min-height: 56px;
-      max-height: 160px;
-      outline: none;
-      transition: border-color 0.2s;
-      font-family: inherit;
-    }
-    #input:focus { border-color: var(--accent); }
-
-    .send-btn {
-      position: absolute;
-      right: 10px;
-      bottom: 10px;
-      background: var(--accent);
-      border: none;
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      color: white;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: 0.2s;
-    }
-    .send-btn:hover { background: var(--accent-hover); }
-    .send-btn:disabled {
-      background: var(--border);
-      cursor: not-allowed;
-    }
-
-    .hints {
-      max-width: 800px;
-      margin: 12px auto 0;
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      font-size: 0.8rem;
-    }
-    .hint {
-      background: var(--card);
-      border: 1px solid var(--border);
-      padding: 6px 12px;
-      border-radius: 20px;
-      cursor: pointer;
-      color: var(--muted);
-      transition: 0.2s;
-    }
-    .hint:hover {
-      border-color: var(--accent);
-      color: var(--text);
-    }
-
-    .typing {
-      display: flex;
-      gap: 4px;
-      padding: 8px 0;
-    }
-    .typing span {
-      width: 8px;
-      height: 8px;
-      background: var(--muted);
-      border-radius: 50%;
-      animation: bounce 1.4s infinite ease-in-out;
-    }
-    .typing span:nth-child(1) { animation-delay: -0.32s; }
-    .typing span:nth-child(2) { animation-delay: -0.16s; }
-
-    @keyframes bounce {
-      0%, 80%, 100% { transform: scale(0); }
-      40% { transform: scale(1); }
-    }
-
-    .empty {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      color: var(--muted);
-      padding: 40px;
-    }
-    .empty h2 {
-      font-size: 1.8rem;
-      color: var(--text);
-      margin-bottom: 12px;
-    }
-    .empty p { max-width: 480px; line-height: 1.6; }
-
-    .msg-actions { margin-top: 8px; text-align: right; }
-    .copy-btn {
-      background: var(--card);
-      border: 1px solid var(--border);
-      color: var(--muted);
-      padding: 3px 10px;
-      border-radius: 6px;
-      font-size: 0.72rem;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    .copy-btn:hover { color: var(--text); border-color: var(--accent); }
-    .code-copy { position: absolute; top: 6px; right: 6px; }
-
-    .install-bar {
-      display: none;
-      align-items: center;
-      gap: 12px;
-      background: linear-gradient(90deg, #1f6feb2e, #2386362e);
-      border-bottom: 1px solid var(--border);
-      padding: 10px 24px;
-      font-size: 0.88rem;
-      color: var(--text);
-    }
-    .install-bar.show { display: flex; }
-    .install-bar .ib-msg { flex: 1; }
-    .install-bar button.ib-go {
-      background: var(--accent);
-      border: none;
-      color: #fff;
-      padding: 7px 16px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 0.85rem;
-      white-space: nowrap;
-    }
-    .install-bar button.ib-go:hover { background: var(--accent-hover); }
-    .install-bar button.ib-x {
-      background: none;
-      border: none;
-      color: var(--muted);
-      font-size: 1.2rem;
-      cursor: pointer;
-      padding: 0 4px;
-      line-height: 1;
-    }
-
-    .attach-btn, .mic-btn {
-      position: absolute;
-      bottom: 10px;
-      background: transparent;
-      border: none;
-      color: var(--muted);
-      font-size: 1.15rem;
-      cursor: pointer;
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      line-height: 1;
-    }
-    .attach-btn { left: 8px; }
-    .mic-btn { left: 48px; }
-    .attach-btn:hover, .mic-btn:hover { color: var(--accent); background: var(--card); }
-
-    .attach-row {
-      max-width: 800px;
-      margin: 0 auto 8px;
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .attach-chip {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 4px 12px;
-      font-size: 0.78rem;
-      color: var(--muted);
-      max-width: 260px;
-    }
-    .attach-chip img { width: 22px; height: 22px; border-radius: 4px; object-fit: cover; }
-    .attach-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .attach-chip button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.9rem; padding: 0; }
-    .attach-chip button:hover { color: #f85149; }
-
-    .gen-btn {
-      background: linear-gradient(90deg, #58a6ff33, #bc8cff33);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 6px 12px;
-      border-radius: 20px;
-      cursor: pointer;
-      font-size: 0.8rem;
-    }
-    .gen-btn:hover { border-color: var(--accent); }
-
-    .content img { max-width: 100%; border-radius: 8px; margin: 8px 0; }
-
-    body.light {
-      --bg: #f6f8fa;
-      --sidebar: #ffffff;
-      --card: #ffffff;
-      --border: #d0d7de;
-      --text: #1f2328;
-      --muted: #57606a;
-      --ai-bg: #f6f8fa;
-      --user-bg: #1f6feb1f;
-    }
-
-    @media (max-width: 768px) {
-      .sidebar { display: none; }
-    }
+    :root { --bg:#0f1117; --sidebar:#161b22; --card:#1c2128; --border:#30363d; --text:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --accent2:#79b8ff; --ok:#3fb950; --user:#1f6feb22; --ai:#21262d; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; overflow:hidden; }
+    .sidebar { width:290px; background:var(--sidebar); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:16px; }
+    .logo { font-size:1.25rem; font-weight:700; margin-bottom:4px; }
+    .logo span { color:var(--accent); }
+    .tagline { font-size:0.72rem; color:var(--muted); margin-bottom:16px; }
+    .new-chat { background:var(--accent); color:#fff; border:none; padding:10px 16px; border-radius:8px; font-weight:600; cursor:pointer; margin-bottom:14px; }
+    .new-chat:hover { background:var(--accent2); }
+    .history { flex:1; overflow-y:auto; font-size:0.9rem; }
+    .history-item { padding:10px 12px; border-radius:6px; cursor:pointer; color:var(--muted); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .history-item:hover, .history-item.active { background:var(--card); color:var(--text); }
+    .settings { border-top:1px solid var(--border); padding-top:14px; font-size:0.85rem; overflow-y:auto; max-height:55vh; }
+    .settings label { display:block; margin-bottom:6px; color:var(--muted); }
+    .settings input, .settings select, .settings textarea { width:100%; background:var(--card); border:1px solid var(--border); color:var(--text); padding:8px; border-radius:6px; margin-bottom:12px; font-size:0.85rem; }
+    .settings textarea { min-height:64px; max-height:130px; font-family:monospace; resize:vertical; }
+    #keyList { font-size:0.74rem; margin-bottom:10px; max-height:160px; overflow-y:auto; }
+    .krow { display:flex; align-items:center; gap:6px; padding:3px 0; color:var(--muted); font-family:monospace; }
+    .kb { padding:1px 7px; border-radius:10px; font-size:0.64rem; font-weight:600; }
+    .kb.ok { background:#23863633; color:var(--ok); }
+    .kb.limited { background:#d2992233; color:#d29922; }
+    .kb.invalid { background:#f8514933; color:#f85149; }
+    .kreq { margin-left:auto; }
+    .reset-btn { width:100%; background:var(--card); border:1px solid var(--border); color:var(--muted); padding:6px; border-radius:6px; cursor:pointer; font-size:0.78rem; margin-bottom:12px; }
+    .reset-btn:hover { color:var(--text); border-color:var(--accent); }
+    .main { flex:1; display:flex; flex-direction:column; min-width:0; }
+    .header { padding:16px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .header h1 { font-size:1.1rem; font-weight:600; }
+    .status { font-size:0.8rem; color:var(--muted); display:flex; align-items:center; gap:6px; }
+    .status .dot { width:8px; height:8px; background:var(--ok); border-radius:50%; }
+    .chat-container { flex:1; overflow-y:auto; padding:24px; display:flex; flex-direction:column; gap:20px; }
+    .message { max-width:800px; margin:0 auto; width:100%; display:flex; gap:14px; }
+    .avatar { width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.8rem; flex-shrink:0; }
+    .avatar.user { background:#1f6feb; }
+    .avatar.ai { background:#238636; }
+    .content { flex:1; background:var(--ai); padding:14px 18px; border-radius:12px; line-height:1.6; font-size:0.95rem; min-width:0; }
+    .message.user .content { background:var(--user); }
+    .content pre { background:#0d1117; border-radius:8px; padding:14px; overflow-x:auto; margin:12px 0; position:relative; }
+    .content code { font-family:"SF Mono","Fira Code",Consolas,monospace; font-size:0.88rem; }
+    .content p { margin-bottom:10px; }
+    .content p:last-child { margin-bottom:0; }
+    .content img { max-width:100%; border-radius:8px; margin:8px 0; }
+    .input-area { padding:16px 24px 24px; border-top:1px solid var(--border); }
+    .input-box { max-width:800px; margin:0 auto; position:relative; }
+    #input { width:100%; background:var(--card); border:1px solid var(--border); color:var(--text); padding:14px 50px 14px 92px; border-radius:12px; resize:none; font-size:1rem; line-height:1.5; min-height:56px; max-height:160px; outline:none; font-family:inherit; }
+    #input:focus { border-color:var(--accent); }
+    .send-btn { position:absolute; right:10px; bottom:10px; background:var(--accent); border:none; width:36px; height:36px; border-radius:8px; color:white; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .send-btn:hover { background:var(--accent2); }
+    .send-btn:disabled { background:var(--border); cursor:not-allowed; }
+    .attach-btn, .mic-btn { position:absolute; bottom:10px; background:transparent; border:none; color:var(--muted); font-size:1.15rem; cursor:pointer; width:36px; height:36px; border-radius:8px; }
+    .attach-btn { left:8px; }
+    .mic-btn { left:48px; }
+    .attach-btn:hover, .mic-btn:hover { color:var(--accent); background:var(--card); }
+    .hints { max-width:800px; margin:12px auto 0; display:flex; gap:8px; flex-wrap:wrap; font-size:0.8rem; }
+    .hint { background:var(--card); border:1px solid var(--border); padding:6px 12px; border-radius:20px; cursor:pointer; color:var(--muted); }
+    .hint:hover { border-color:var(--accent); color:var(--text); }
+    .typing { display:flex; gap:4px; padding:8px 0; }
+    .typing span { width:8px; height:8px; background:var(--muted); border-radius:50%; animation:bounce 1.4s infinite ease-in-out; }
+    .typing span:nth-child(1) { animation-delay:-0.32s; }
+    .typing span:nth-child(2) { animation-delay:-0.16s; }
+    @keyframes bounce { 0%,80%,100%{transform:scale(0)} 40%{transform:scale(1)} }
+    .empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:var(--muted); padding:40px; }
+    .empty h2 { font-size:1.8rem; color:var(--text); margin-bottom:12px; }
+    .msg-actions { margin-top:8px; text-align:right; }
+    .copy-btn { background:var(--card); border:1px solid var(--border); color:var(--muted); padding:3px 10px; border-radius:6px; font-size:0.72rem; cursor:pointer; margin-left:4px; }
+    .copy-btn:hover { color:var(--text); border-color:var(--accent); }
+    .code-copy { position:absolute; top:6px; right:6px; }
+    .install-bar { display:none; align-items:center; gap:12px; background:linear-gradient(90deg,#1f6feb2e,#2386362e); border-bottom:1px solid var(--border); padding:10px 24px; font-size:0.88rem; }
+    .install-bar.show { display:flex; }
+    .ib-go { background:var(--accent); border:none; color:#fff; padding:7px 16px; border-radius:8px; font-weight:600; cursor:pointer; }
+    .ib-x { background:none; border:none; color:var(--muted); font-size:1.2rem; cursor:pointer; }
+    .attach-row { max-width:800px; margin:0 auto 8px; display:flex; gap:8px; flex-wrap:wrap; }
+    .attach-chip { display:flex; align-items:center; gap:6px; background:var(--card); border:1px solid var(--border); border-radius:16px; padding:4px 12px; font-size:0.78rem; color:var(--muted); }
+    .attach-chip img { width:22px; height:22px; border-radius:4px; object-fit:cover; }
+    .attach-chip button { background:none; border:none; color:var(--muted); cursor:pointer; }
+    .attach-chip button:hover { color:#f85149; }
+    .gen-btn { background:linear-gradient(90deg,#58a6ff33,#bc8cff33); border:1px solid var(--border); color:var(--text); padding:6px 12px; border-radius:20px; cursor:pointer; font-size:0.8rem; }
+    .gen-btn:hover { border-color:var(--accent); }
+    body.light { --bg:#f6f8fa; --sidebar:#fff; --card:#fff; --border:#d0d7de; --text:#1f2328; --muted:#57606a; --ai:#f6f8fa; --user:#1f6feb1f; }
+    @media(max-width:768px){ .sidebar{display:none} }
   </style>
 </head>
 <body>
-
   <div class="sidebar">
-    <div class="logo">⚡ Jogi <span>IoT</span></div>
-    <div class="tagline">Search Engine • rotates ALL your free APIs • no hard limits</div>
+    <div class="logo">Jogi <span>IoT</span></div>
+    <div class="tagline">AI Search Engine - rotates ALL your free APIs</div>
     <button class="new-chat" onclick="newChat()">+ New Search</button>
-
-    <input type="text" id="histSearch" placeholder="🔎 Search past searches..." oninput="renderHistory()" style="margin-bottom:10px;background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:6px;font-size:0.85rem;width:100%" />
-
     <div class="history" id="history"></div>
-
     <div class="settings">
       <label>Backend</label>
-      <select id="backend" onchange="saveSettings()">
+      <select id="backend" onchange="save()">
         <option value="pool">All APIs (auto-rotate)</option>
         <option value="ollama">Ollama (Local)</option>
       </select>
-
-      <label>Default model (for NVIDIA + pool lines without one)</label>
-      <input type="text" id="model" placeholder="meta/llama-3.3-70b-instruct" onchange="saveSettings()" />
-
-      <label>NVIDIA API keys — one per line (up to 10). Leave ALL empty if keys are in the Worker secret.</label>
-      <textarea id="nvidiaKeys" placeholder="nvapi-xxxxxxxx&#10;nvapi-yyyyyyyy" spellcheck="false" onchange="saveSettings()"></textarea>
-
-      <label>More free APIs — one per line: provider | key | model? (Or leave empty — worker handles keys)</label>
-      <textarea id="pool" placeholder="Just paste keys — auto-detected:&#10;nvapi-xxxxx (NVIDIA)&#10;gsk_xxxxx (Groq)&#10;AIza_xxxxx (Gemini)&#10;or with model: groq | gsk_xxxxx | model" spellcheck="false" onchange="saveSettings()"></textarea>
-
+      <label>Default Model</label>
+      <input type="text" id="model" placeholder="meta/llama-3.3-70b-instruct" onchange="save()">
+      <label>NVIDIA API Keys (one per line, up to 10)</label>
+      <textarea id="nvidiaKeys" placeholder="nvapi-xxxxxxxx" spellcheck="false" onchange="save()"></textarea>
+      <label>More APIs (provider|key|model)</label>
+      <textarea id="pool" placeholder="groq|gsk_xxx|llama-3.3-70b&#10;gemini|AIza_xxx|gemini-2.0-flash" spellcheck="false" onchange="save()"></textarea>
       <div id="keyList"></div>
-      <button class="reset-btn" onclick="resetPool()">↻ Reset API states</button>
-      <button class="reset-btn" onclick="clearAllData()" style="color:#f85149;border-color:#f8514944">🗑 Clear all data & cache</button>
-
-      <label>Proxy URL (leave empty on the Cloudflare app — auto /api)</label>
-      <input type="text" id="proxyUrl" placeholder="empty = /api (auto)" onchange="saveSettings()" />
-
-      <label>Ollama URL (only for Ollama backend)</label>
-      <input type="text" id="ollamaUrl" value="http://localhost:11434" onchange="saveSettings()" />
+      <button class="reset-btn" onclick="resetPool()">Reset API States</button>
+      <label>Proxy URL (for GitHub Pages)</label>
+      <input type="text" id="proxyUrl" placeholder="https://your-worker.workers.dev/" onchange="save()">
+      <label>Ollama URL</label>
+      <input type="text" id="ollamaUrl" value="http://localhost:11434" onchange="save()">
+      <button class="reset-btn" onclick="clearAll()" style="color:#f85149;border-color:#f8514944">Clear All Data</button>
     </div>
   </div>
-
   <div class="main">
     <div class="header">
-      <h1>⚡ Jogi IoT Search Engine</h1>
+      <h1>Jogi IoT Search Engine</h1>
       <div style="display:flex;align-items:center;gap:10px">
-        <button class="gen-btn" onclick="generateImageFromInput()" title="Generate an AI image">🎨 Image</button>
-        <button class="copy-btn" onclick="toggleTheme()" title="Light / dark" id="themeBtn">🌙</button>
-        <div class="status">
-          <div class="dot"></div>
-          <span id="statusText">Ready</span>
-        </div>
+        <button class="gen-btn" onclick="genImage()">Image</button>
+        <button class="copy-btn" onclick="toggleTheme()" id="themeBtn">Dark</button>
+        <div class="status"><div class="dot"></div><span id="statusText">Ready</span></div>
       </div>
     </div>
-
     <div class="install-bar" id="installBar">
-      <div class="ib-msg" id="ibMsg">📲 Install <b>Jogi IoT</b> as an app — opens fullscreen, works offline.</div>
-      <button class="ib-go" id="installBtn">Install app</button>
-      <button class="ib-x" onclick="hideInstallBar()" title="Not now">✕</button>
+      <div style="flex:1">Install <b>Jogi IoT</b> as an app</div>
+      <button class="ib-go" id="installBtn">Install</button>
+      <button class="ib-x" onclick="hideInstall()">x</button>
     </div>
-
     <div class="chat-container" id="chat">
       <div class="empty" id="empty">
-        <h2>Ask anything — code, IoT, docs</h2>
-        <p>Add free API keys in the sidebar — or leave empty and set Proxy URL to a Cloudflare Worker with JOGI_KEYS secret. The engine rotates across all APIs: when one hits its quota, the next answers. Paste keys, ask, repeat — without stopping.</p>
+        <h2>Ask anything - code, IoT, docs</h2>
+        <p>Add API keys in sidebar, or leave empty and use Proxy URL to a worker with JOGI_KEYS secret.</p>
       </div>
     </div>
-
     <div class="input-area">
       <div class="attach-row" id="attachRow"></div>
       <div class="input-box">
-        <textarea id="input" rows="1" placeholder="Ask anything, attach images/docs, or click 🎤 to talk..." onkeydown="handleKey(event)"></textarea>
-        <button class="attach-btn" id="attachBtn" onclick="$('fileInput').click()" title="Attach image or document">📎</button>
-        <button class="mic-btn" id="micBtn" onclick="startVoice()" title="Speak your question">🎤</button>
-        <input type="file" id="fileInput" accept="image/*,.txt,.md,.csv,.json,.js,.py,.html,.log,.xml" multiple style="display:none" onchange="handleFiles(this)" />
-        <button class="send-btn" id="sendBtn" onclick="sendMessage()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-          </svg>
+        <textarea id="input" rows="1" placeholder="Ask anything..." onkeydown="handleKey(event)"></textarea>
+        <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="Attach">+</button>
+        <button class="mic-btn" onclick="startVoice()" title="Voice">Mic</button>
+        <input type="file" id="fileInput" accept="image/*,.txt,.md,.csv,.json,.js,.py,.html" multiple style="display:none" onchange="handleFiles(this)">
+        <button class="send-btn" id="sendBtn" onclick="send()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
         </button>
       </div>
       <div class="hints">
-        <div class="hint" onclick="setHint('Sing me a song 🎵')">Sing a song 🎵</div>
-        <div class="hint" onclick="setHint('Write Arduino code to read a DHT11 temperature sensor')">Arduino DHT11</div>
-        <div class="hint" onclick="setHint('Explain MQTT vs HTTP for IoT devices with examples')">MQTT vs HTTP</div>
-        <div class="hint" onclick="setHint('Write a React hook for infinite scroll')">React infinite scroll</div>
-        <div class="hint" onclick="setHint('Fix this error: TypeError: Cannot read properties of undefined')">Debug error</div>
+        <div class="hint" onclick="setHint('Sing me a song')">Sing a song</div>
+        <div class="hint" onclick="setHint('Arduino DHT11 code')">Arduino DHT11</div>
+        <div class="hint" onclick="setHint('MQTT vs HTTP')">MQTT vs HTTP</div>
+        <div class="hint" onclick="setHint('React infinite scroll hook')">React scroll</div>
+        <div class="hint" onclick="setHint('Debug TypeError')">Debug error</div>
       </div>
     </div>
   </div>
-
 <script>
-  let messages = [];
-  let isLoading = false;
-  let pool = [];
-  let currentIndex = -1;
-  const MAX_NVIDIA_KEYS = 10;
-  const COOLDOWN_MS = 10 * 60 * 1000;
-  const DEFAULT_MODEL = 'meta/llama-3.3-70b-instruct';
+const $ = id => document.getElementById(id);
+let messages = [], isLoading = false, pool = [], currentIndex = -1;
+const COOLDOWN = 10 * 60 * 1000, DEFAULT_MODEL = 'meta/llama-3.3-70b-instruct';
+const PRESETS = {
+  nvidia:{name:'NVIDIA',url:'',model:DEFAULT_MODEL},
+  groq:{name:'Groq',url:'https://api.groq.com/openai/v1/chat/completions',model:'llama-3.3-70b-versatile'},
+  gemini:{name:'Gemini',url:'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',model:'gemini-2.0-flash'},
+  openrouter:{name:'OpenRouter',url:'https://openrouter.ai/api/v1/chat/completions',model:'meta-llama/llama-3.3-70b-instruct:free'},
+  mistral:{name:'Mistral',url:'https://api.mistral.ai/v1/chat/completions',model:'mistral-small-latest'},
+  cerebras:{name:'Cerebras',url:'https://api.cerebras.ai/v1/chat/completions',model:'llama-3.3-70b'},
+  sambanova:{name:'SambaNova',url:'https://api.sambanova.ai/v1/chat/completions',model:'Meta-Llama-3.3-70B-Instruct'},
+  together:{name:'Together',url:'https://api.together.xyz/v1/chat/completions',model:'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free'},
+  github:{name:'GitHub',url:'https://models.github.ai/inference/chat/completions',model:'openai/gpt-4o-mini'},
+  huggingface:{name:'HuggingFace',url:'https://router.huggingface.co/v1/chat/completions',model:'meta-llama/Llama-3.1-8B-Instruct'},
+  cohere:{name:'Cohere',url:'https://api.cohere.ai/compatibility/v1/chat/completions',model:'command-r-plus'}
+};
 
-  const PRESETS = {
-    nvidia:      { name: 'NVIDIA',      base: '', model: DEFAULT_MODEL },
-    groq:        { name: 'Groq',        base: 'https://api.groq.com/openai/v1/chat/completions',                              model: 'llama-3.3-70b-versatile' },
-    gemini:      { name: 'Gemini',      base: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',     model: 'gemini-2.0-flash' },
-    openrouter:  { name: 'OpenRouter',  base: 'https://openrouter.ai/api/v1/chat/completions',                                model: 'meta-llama/llama-3.3-70b-instruct:free' },
-    mistral:     { name: 'Mistral',     base: 'https://api.mistral.ai/v1/chat/completions',                                   model: 'mistral-small-latest' },
-    cerebras:    { name: 'Cerebras',    base: 'https://api.cerebras.ai/v1/chat/completions',                                  model: 'llama-3.3-70b' },
-    sambanova:   { name: 'SambaNova',   base: 'https://api.sambanova.ai/v1/chat/completions',                                 model: 'Meta-Llama-3.3-70B-Instruct' },
-    together:    { name: 'Together',    base: 'https://api.together.xyz/v1/chat/completions',                                 model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free' },
-    github:      { name: 'GitHub',      base: 'https://models.github.ai/inference/chat/completions',                          model: 'openai/gpt-4o-mini' },
-    huggingface: { name: 'HuggingFace', base: 'https://router.huggingface.co/v1/chat/completions',                            model: 'meta-llama/Llama-3.1-8B-Instruct' },
-    hf:          { name: 'HuggingFace', base: 'https://router.huggingface.co/v1/chat/completions',                            model: 'meta-llama/Llama-3.1-8B-Instruct' },
-    cohere:      { name: 'Cohere',      base: 'https://api.cohere.ai/compatibility/v1/chat/completions',                      model: 'command-r-plus' }
-  };
+function detectKey(k){ if(k.startsWith('nvapi-'))return'nvidia'; if(k.startsWith('gsk_'))return'groq'; if(k.startsWith('AIza'))return'gemini'; if(k.startsWith('sk-or-'))return'openrouter'; if(k.startsWith('hf_'))return'huggingface'; if(k.startsWith('ghp_'))return'github'; if(k.startsWith('csk-'))return'cerebras'; return null; }
 
-  const $ = id => document.getElementById(id);
+function load(){
+  let b = localStorage.getItem('jogiBackend')||'pool';
+  $('backend').value = b;
+  $('model').value = localStorage.getItem('jogiModel')||DEFAULT_MODEL;
+  $('nvidiaKeys').value = localStorage.getItem('jogiKeys')||'';
+  $('pool').value = localStorage.getItem('jogiPool')||'';
 
-  function clearAllData() {
-    if (!confirm('Clear all saved keys, history, and settings?')) return;
-    localStorage.clear();
-    location.reload();
+  // AUTO-SET PROXY for GitHub Pages
+  let proxy = localStorage.getItem('jogiProxyUrl')||'';
+  if(!proxy && location.hostname.includes('github.io')){
+    proxy = 'https://jogi-iot-search-engine.jogendra-dipeng11.workers.dev/';
+    localStorage.setItem('jogiProxyUrl',proxy);
   }
-
-  function loadSettings() {
-    let b = localStorage.getItem('jogiBackend') || 'pool';
-    if (b === 'nvidia' || b === 'custom') b = 'pool';
-    $('backend').value   = b;
-    $('model').value     = localStorage.getItem('jogiModel')     || DEFAULT_MODEL;
-    $('nvidiaKeys').value = localStorage.getItem('jogiKeys')     || '';
-    $('pool').value      = localStorage.getItem('jogiPool')      || '';
-
-    // Auto-detect GitHub Pages and set proxy URL if empty
-    let proxy = localStorage.getItem('jogiProxyUrl') || '';
-    const isGitHubPages = location.hostname.includes('github.io');
-    const workerUrl = 'https://jogi-iot-search-engine.jogendra-dipeng11.workers.dev/';
-    if (!proxy && isGitHubPages) {
-      proxy = workerUrl;
-      localStorage.setItem('jogiProxyUrl', proxy);
-    }
-    $('proxyUrl').value = proxy;
-
-    $('ollamaUrl').value = localStorage.getItem('jogiOllamaUrl') || 'http://localhost:11434';
-    buildPool();
-  }
-
-  function saveSettings() {
-    localStorage.setItem('jogiBackend',   $('backend').value);
-    localStorage.setItem('jogiModel',     $('model').value);
-    localStorage.setItem('jogiKeys',      $('nvidiaKeys').value);
-    localStorage.setItem('jogiPool',      $('pool').value);
-    localStorage.setItem('jogiProxyUrl',  $('proxyUrl').value);
-    localStorage.setItem('jogiOllamaUrl', $('ollamaUrl').value);
-    buildPool();
-    updateStatus('Ready • ' + poolSummary());
-  }
-
-  function detectPreset(k) {
-    if (/^nvapi-/.test(k)) return 'nvidia';
-    if (/^gsk_/.test(k)) return 'groq';
-    if (/^AIza/.test(k)) return 'gemini';
-    if (/^sk-or-/.test(k)) return 'openrouter';
-    if (/^hf_/.test(k)) return 'huggingface';
-    if (/^ghp_/.test(k)) return 'github';
-    if (/^csk-/.test(k)) return 'cerebras';
-    return null;
-  }
-
-  function parsePoolLine(line) {
-    const parts = line.split('|').map(s => s.trim());
-    if (!parts[0]) return null;
-    const p = PRESETS[parts[0].toLowerCase()];
-    if (p) {
-      const key = parts[1] || '';
-      return { id: p.name + '|' + key + '|' + (parts[2] || ''), label: p.name, key, model: parts[2] || p.model, target: p.base || null };
-    }
-    if (/^https?:\/\//i.test(parts[0])) {
-      let host = 'custom';
-      try { host = new URL(parts[0]).hostname.replace(/^(api\.|www\.)/, ''); } catch (e) { return null; }
-      const key = parts[1] || '';
-      return { id: parts[0] + '|' + key, label: host, key, model: parts[2] || $('model').value.trim() || DEFAULT_MODEL, target: parts[0] };
-    }
-    const g = detectPreset(line);
-    if (g) {
-      const p = PRESETS[g];
-      return { id: p.name + '|' + line, label: p.name, key: line, model: p.model, target: p.base || null };
-    }
-    return null;
-  }
-
-  let serverEntries = [];
-
-  async function loadServerKeys() {
-    const proxyBase = $('proxyUrl').value.trim().replace(/\/+$/, '');
-    const endpoint = proxyBase || '/api';
-    try {
-      const res = await fetch(endpoint + '/keys', { method: 'GET' });
-      if (!res.ok) return;
-      const data = await res.json();
-      const keys = (data && data.keys) || [];
-      serverEntries = keys.map(k => ({
-        id: 'server|' + k.preset + '|' + (k.key || ''),
-        label: 'Server • ' + (k.label || k.preset),
-        key: '',
-        model: k.model || $('model').value.trim() || DEFAULT_MODEL,
-        target: k.target || null,
-        server: true,
-        requests: 0, state: 'active', exhaustedUntil: 0
-      }));
-      buildPool();
-    } catch (e) { }
-  }
-
-  function buildPool() {
-    const model = $('model').value.trim() || DEFAULT_MODEL;
-    const entries = $('nvidiaKeys').value
-      .split(/[
-,;]+/)
-      .map(s => s.trim())
-      .filter(Boolean)
-      .slice(0, MAX_NVIDIA_KEYS)
-      .map(k => ({ id: 'NVIDIA|' + k, label: 'NVIDIA', key: k, model, target: null }));
-
-    $('pool').value
-      .split('
-')
-      .map(s => s.trim())
-      .filter(l => l && !l.startsWith('#'))
-      .forEach(line => {
-        const e = parsePoolLine(line);
-        if (e) entries.push(e);
-      });
-
-    serverEntries.forEach(e => entries.push(e));
-
-    let saved = {};
-    try { saved = JSON.parse(localStorage.getItem('jogiKeyStates') || '{}'); } catch (e) {}
-
-    pool = entries.map(e => {
-      const prev = saved[e.id] || saved[e.key];
-      return Object.assign(e, prev
-        ? { requests: prev.requests || 0, state: prev.state || 'active', exhaustedUntil: prev.exhaustedUntil || 0 }
-        : { requests: 0, state: 'active', exhaustedUntil: 0 });
-    });
-
-    if (currentIndex >= pool.length) currentIndex = -1;
-    persistPool();
-    renderPoolList();
-  }
-
-  function persistPool() {
-    const obj = {};
-    pool.forEach(e => { obj[e.id] = { requests: e.requests, state: e.state, exhaustedUntil: e.exhaustedUntil }; });
-    localStorage.setItem('jogiKeyStates', JSON.stringify(obj));
-  }
-
-  function entryUsable(e) {
-    if (e.state === 'invalid') return false;
-    if (e.state === 'limited' && Date.now() < e.exhaustedUntil) return false;
-    return true;
-  }
-
-  function pickNextEntry() {
-    if (!pool.length) return null;
-    for (let i = 0; i < pool.length; i++) {
-      currentIndex = (currentIndex + 1) % pool.length;
-      const e = pool[currentIndex];
-      if (entryUsable(e)) return e;
-    }
-    return null;
-  }
-
-  function maskKey(k) {
-    if (!k) return 'no-key';
-    return k.length > 8 ? '…' + k.slice(-4) : '…';
-  }
-
-  function renderPoolList() {
-    const el = $('keyList');
-    if (!pool.length) {
-      el.innerHTML = '<div style="color:var(--muted);font-size:0.75rem;padding:2px 0">No APIs yet — add NVIDIA keys and/or pool lines above.</div>';
-      return;
-    }
-    el.innerHTML = pool.map((e, i) => {
-      const usable = entryUsable(e);
-      const badge = e.state === 'invalid'
-        ? '<span class="kb invalid">invalid</span>'
-        : (!usable ? '<span class="kb limited">cooldown</span>' : '<span class="kb ok">active</span>');
-      const cur = i === currentIndex ? ' ◄' : '';
-      const keyTxt = e.server ? 'server-key' : maskKey(e.key);
-      return `<div class="krow" title="${e.model}">#${i + 1} ${e.label} ${keyTxt} <span class="kmodel">${e.model}</span> ${badge}<span class="kreq">${e.requests}${cur}</span></div>`;
-    }).join('');
-  }
-
-  function resetPool() {
-    pool.forEach(e => { e.state = 'active'; e.exhaustedUntil = 0; });
-    persistPool();
-    renderPoolList();
-    updateStatus('Ready • ' + poolSummary());
-  }
-
-  function poolSummary() {
-    if (!pool.length) return 'add APIs in sidebar';
-    const cooling = pool.filter(e => !entryUsable(e)).length;
-    const reqs = pool.reduce((a, e) => a + e.requests, 0);
-    return `api ${Math.max(currentIndex, 0) + 1}/${pool.length} • ${reqs} req • ${cooling} cooling`;
-  }
-
-  let conversations = [];
-  let activeChatId = null;
-  try { conversations = JSON.parse(localStorage.getItem('jogiChats') || '[]'); } catch (e) {}
-
-  function saveChats() {
-    localStorage.setItem('jogiChats', JSON.stringify(conversations.slice(-30)));
-  }
-
-  function esc(s) {
-    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  }
-
-  function renderHistory() {
-    const el = $('history');
-    const term = ($('histSearch').value || '').toLowerCase();
-    if (!conversations.length) {
-      el.innerHTML = '<div style="color:var(--muted);font-size:0.78rem;padding:4px">No searches yet</div>';
-      return;
-    }
-    const filtered = conversations.filter(c => !term || c.title.toLowerCase().includes(term));
-    el.innerHTML = filtered.slice().reverse().map(c =>
-      `<div class="history-item ${c.id === activeChatId ? 'active' : ''}" onclick="loadChat(${c.id})" title="${esc(c.title)}">🔎 ${esc(c.title)}</div>`
-    ).join('');
-  }
-
-  function trackConversation(title) {
-    if (!activeChatId) {
-      activeChatId = Date.now();
-      conversations.push({ id: activeChatId, title: (title || 'search').slice(0, 42), messages: [] });
-      if (conversations.length > 30) conversations = conversations.slice(-30);
-    }
-    const conv = conversations.find(c => c.id === activeChatId);
-    if (conv) conv.messages = messages.slice(-40);
-    saveChats();
-    renderHistory();
-  }
-
-  function loadChat(id) {
-    const conv = conversations.find(c => c.id === id);
-    if (!conv) return;
-    activeChatId = id;
-    messages = conv.messages.slice();
-    const chat = $('chat');
-    chat.innerHTML = '';
-    messages.forEach(m => addMessage(m.role, m.content));
-    renderHistory();
-  }
-
-  let pendingImage = null;
-  let attachedDocs = [];
-
-  function loadImageFile(file, cb) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        const max = 1024;
-        let w = img.width, h = img.height;
-        if (w > max || h > max) { const r = max / Math.max(w, h); w = Math.round(w * r); h = Math.round(h * r); }
-        const cv = document.createElement('canvas');
-        cv.width = w; cv.height = h;
-        cv.getContext('2d').drawImage(img, 0, 0, w, h);
-        cb({ name: file.name, dataUrl: cv.toDataURL('image/jpeg', 0.85) });
-      };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function handleFiles(input) {
-    const files = Array.from(input.files || []);
-    input.value = '';
-    files.forEach(f => {
-      if (f.type.startsWith('image/')) {
-        loadImageFile(f, r => { pendingImage = r; renderAttachRow(); });
-      } else {
-        const reader = new FileReader();
-        reader.onload = () => {
-          attachedDocs.push({ name: f.name, text: String(reader.result).slice(0, 20000) });
-          renderAttachRow();
-        };
-        reader.readAsText(f);
-      }
-    });
-  }
-
-  function renderAttachRow() {
-    const row = $('attachRow');
-    row.innerHTML = '';
-    if (pendingImage) {
-      row.innerHTML += `<div class="attach-chip"><img src="${pendingImage.dataUrl}" alt=""/><span>${pendingImage.name}</span><button onclick="removeAttach()" title="Remove">✕</button></div>`;
-    }
-    attachedDocs.forEach((d, i) => {
-      row.innerHTML += `<div class="attach-chip"><span>📄 ${d.name}</span><button onclick="removeDoc(${i})" title="Remove">✕</button></div>`;
-    });
-  }
-
-  function removeAttach() { pendingImage = null; renderAttachRow(); }
-  function removeDoc(i) { attachedDocs.splice(i, 1); renderAttachRow(); }
-
-  function startVoice() {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { alert('Voice input needs Chrome or Edge (Android or desktop).'); return; }
-    const rec = new SR();
-    rec.lang = 'en-US';
-    rec.interimResults = false;
-    $('micBtn').textContent = '⏺';
-    rec.onresult = (e) => { $('input').value = e.results[0][0].transcript; $('input').focus(); };
-    rec.onend = () => { $('micBtn').textContent = '🎤'; };
-    rec.onerror = () => { $('micBtn').textContent = '🎤'; };
-    rec.start();
-  }
-
-  function toggleTheme() {
-    document.body.classList.toggle('light');
-    const light = document.body.classList.contains('light');
-    localStorage.setItem('jogiTheme', light ? 'light' : 'dark');
-    $('themeBtn').textContent = light ? '☀️' : '🌙';
-  }
-
-  async function generateImageFromInput() {
-    const prompt = $('input').value.trim();
-    const p = prompt || 'A beautiful futuristic IoT city at night, neon lights';
-    if (!prompt) $('input').value = p;
-    if (isLoading) return;
-    isLoading = true;
-    $('sendBtn').disabled = true;
-
-    addMessage('user', '🎨 Generate image: ' + p);
-    messages.push({ role: 'user', content: '🎨 Generate image: ' + p });
-
-    showTyping();
-    updateStatus('Drawing…');
-
-    try {
-      const proxyBase = $('proxyUrl').value.trim().replace(/\/+$/, '');
-      const endpoint = proxyBase || '/api';
-      const res = await fetch(endpoint + '/gen', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: p })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.image) throw new Error(data.error || ('Image generation failed (' + res.status + ')'));
-      const url = 'data:image/png;base64,' + data.image;
-      removeTyping();
-      addMessage('assistant', '![generated](' + url + ')
-
-_AI image: ' + p + '_');
-      messages.push({ role: 'assistant', content: '![generated](' + url + ')' });
-      trackConversation();
-      updateStatus('Ready • ' + poolSummary());
-    } catch (err) {
-      removeTyping();
-      addMessage('assistant', `**Error:** ${err.message}`);
-      updateStatus('Error');
-    }
-
-    isLoading = false;
-    $('sendBtn').disabled = false;
-  }
-
-  let audioCtx = null;
-  let melodyTimer = null;
-  let speaking = false;
-  const MELODY = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 440.0, 392.0];
-
-  function speakText(rawText, btn) {
-    if (!('speechSynthesis' in window)) return;
-    if (speaking) {
-      window.speechSynthesis.cancel();
-      speaking = false;
-      stopMelody();
-      if (btn) btn.textContent = '🔊 speak';
-      return;
-    }
-    const clean = String(rawText).replace(/[#*`>|_~]/g, ' ').replace(/\s+/g, ' ').slice(0, 1500);
-    const u = new SpeechSynthesisUtterance(clean);
-    u.rate = 1; u.pitch = 1;
-    u.onend = () => { speaking = false; stopMelody(); if (btn) btn.textContent = '🔊 speak'; };
-    u.onerror = () => { speaking = false; stopMelody(); if (btn) btn.textContent = '🔊 speak'; };
-    speaking = true;
-    if (btn) btn.textContent = '⏹ stop';
-    window.speechSynthesis.speak(u);
-  }
-
-  function playMelody() {
-    if (!audioCtx) return;
-    if (melodyTimer) return;
-    let i = 0;
-    melodyTimer = setInterval(() => {
-      const t = audioCtx.currentTime;
-      const o = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      o.type = 'sine';
-      o.frequency.value = MELODY[i % MELODY.length];
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.12, t + 0.03);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
-      o.connect(g); g.connect(audioCtx.destination);
-      o.start(t); o.stop(t + 0.5);
-      i++;
-    }, 360);
-  }
-
-  function stopMelody() {
-    if (melodyTimer) { clearInterval(melodyTimer); melodyTimer = null; }
-  }
-
-  function addCopyButtons(container, rawText) {
-    if (!container || container.querySelector('.msg-actions')) return;
-    const bar = document.createElement('div');
-    bar.className = 'msg-actions';
-    const btn = document.createElement('button');
-    btn.className = 'copy-btn';
-    btn.textContent = '📋 copy answer';
-    btn.onclick = () => {
-      navigator.clipboard.writeText(rawText);
-      btn.textContent = '✓ copied';
-      setTimeout(() => { btn.textContent = '📋 copy answer'; }, 1500);
-    };
-    bar.appendChild(btn);
-
-    const speak = document.createElement('button');
-    speak.className = 'copy-btn';
-    speak.textContent = '🔊 speak';
-    speak.onclick = () => speakText(rawText, speak);
-    bar.appendChild(speak);
-
-    const dl = document.createElement('button');
-    dl.className = 'copy-btn';
-    dl.textContent = '💾 save';
-    dl.onclick = () => {
-      const blob = new Blob([rawText], { type: 'text/markdown' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'jogi-answer.md';
-      a.click();
-      URL.revokeObjectURL(a.href);
-      dl.textContent = '✓ saved';
-      setTimeout(() => { dl.textContent = '💾 save'; }, 1500);
-    };
-    bar.appendChild(dl);
-
-    container.appendChild(bar);
-
-    container.querySelectorAll('pre').forEach(pre => {
-      if (pre.querySelector('.code-copy')) return;
-      pre.style.position = 'relative';
-      const code = pre.querySelector('code');
-      const b = document.createElement('button');
-      b.className = 'copy-btn code-copy';
-      b.textContent = 'copy';
-      b.onclick = () => {
-        navigator.clipboard.writeText(code ? code.innerText : pre.innerText);
-        b.textContent = '✓';
-        setTimeout(() => { b.textContent = 'copy'; }, 1500);
-      };
-      pre.appendChild(b);
-    });
-  }
-
-  function updateStatus(text) {
-    $('statusText').textContent = text;
-  }
-
-  function newChat() {
-    messages = [];
-    activeChatId = null;
-    renderHistory();
-    $('chat').innerHTML = `
-      <div class="empty" id="empty">
-        <h2>Ask anything — code, IoT, docs</h2>
-        <p>Add free API keys in the sidebar — or leave empty and set Proxy URL to a Cloudflare Worker with JOGI_KEYS secret. The engine rotates across all APIs: when one hits its quota, the next answers. Paste keys, ask, repeat — without stopping.</p>
-      </div>`;
-  }
-
-  function setHint(text) {
-    $('input').value = text;
-    $('input').focus();
-  }
-
-  function handleKey(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  }
-
-  function addMessage(role, content) {
-    const empty = $('empty');
-    if (empty) empty.remove();
-
-    const chat = $('chat');
-    const div = document.createElement('div');
-    div.className = `message ${role}`;
-
-    const avatar = role === 'user' ? 'You' : 'JI';
-    const avatarClass = role === 'user' ? 'user' : 'ai';
-
-    let htmlContent = content;
-    if (role === 'assistant') {
-      htmlContent = marked.parse(content);
-    }
-
-    div.innerHTML = `
-      <div class="avatar ${avatarClass}">${avatar}</div>
-      <div class="content">${htmlContent}</div>
-    `;
-    chat.appendChild(div);
-    chat.scrollTop = chat.scrollHeight;
-
-    div.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
-    if (role === 'assistant') addCopyButtons(div.querySelector('.content'), content);
-  }
-
-  function showTyping() {
-    const chat = $('chat');
-    const div = document.createElement('div');
-    div.className = 'message assistant';
-    div.id = 'typing';
-    div.innerHTML = `
-      <div class="avatar ai">JI</div>
-      <div class="content"><div class="typing"><span></span><span></span><span></span></div></div>
-    `;
-    chat.appendChild(div);
-    chat.scrollTop = chat.scrollHeight;
-  }
-
-  function removeTyping() {
-    const t = $('typing');
-    if (t) t.remove();
-  }
-
-  function addStreamingMessage() {
-    const empty = $('empty');
-    if (empty) empty.remove();
-    const chat = $('chat');
-    const div = document.createElement('div');
-    div.className = 'message assistant';
-    div.innerHTML = `<div class="avatar ai">JI</div><div class="content"></div>`;
-    chat.appendChild(div);
-    chat.scrollTop = chat.scrollHeight;
-    return div.querySelector('.content');
-  }
-
-  function renderStreaming(el, text) {
-    el.innerHTML = marked.parse(text);
-    $('chat').scrollTop = $('chat').scrollHeight;
-  }
-
-  function finalizeStreaming(el, rawText) {
-    el.querySelectorAll('pre code').forEach(b => hljs.highlightElement(b));
-    addCopyButtons(el, rawText);
-  }
-
-  async function callOllama(prompt) {
-    const url = $('ollamaUrl').value.replace(/\/$/, '') + '/api/chat';
-    const model = $('model').value;
-
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: model,
-        messages: [
-          { role: 'system', content: 'You are Jogi IoT Search Engine, an expert coding and IoT assistant. Give clear, practical answers with code examples. Format code with markdown.' },
-          ...messages,
-          { role: 'user', content: prompt }
-        ],
-        stream: false
-      })
-    });
-
-    if (!res.ok) throw new Error('Ollama error: ' + res.status);
-    const data = await res.json();
-    return data.message.content;
-  }
-
-  async function readSSE(res, onToken) {
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '', full = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('
-');
-      buffer = lines.pop() || '';
-      for (const line of lines) {
-        const t = line.trim();
-        if (!t.startsWith('data:')) continue;
-        const payload = t.slice(5).trim();
-        if (!payload || payload === '[DONE]') continue;
-        try {
-          const j = JSON.parse(payload);
-          const delta = (j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content) || '';
-          if (delta) { full += delta; if (onToken) onToken(full); }
-        } catch (e) { }
-      }
-    }
-    if (!full) throw new Error('Empty response — try again.');
-    return full;
-  }
-
-  async function callPool(prompt, onToken, image) {
-    const proxyBase = $('proxyUrl').value.trim().replace(/\/+$/, '');
-    const endpoint = proxyBase || '/api';
-    const hasClientKeys = pool.length > 0 && pool.some(e => !e.server);
-
-    // Server-keys-only mode: no client keys, but proxy is set
-    if (!pool.length && !proxyBase) {
-      throw new Error('Add at least one API in the sidebar — or set Proxy URL to a worker with JOGI_KEYS secret.');
-    }
-
-    // If only server keys exist (or no client keys but proxy set), send single request to worker
-    if ((!hasClientKeys && proxyBase) || (pool.length > 0 && pool.every(e => e.server))) {
-      updateStatus('Thinking • worker pool');
-      let res;
-      try {
-        res = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: $('model').value.trim() || DEFAULT_MODEL,
-            messages: [
-              { role: 'system', content: 'You are Jogi IoT Search Engine, an expert coding and IoT assistant. Give clear, practical answers with code examples. Format code with markdown.' },
-              ...messages,
-              { role: 'user', content: image ? [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: image } }] : prompt }
-            ],
-            temperature: 0.2,
-            max_tokens: 2048,
-            stream: true
-          })
-        });
-      } catch (netErr) {
-        throw new Error(`Failed to reach proxy at ${endpoint} — check the URL and that the worker is deployed.`);
-      }
-
-      if (res.ok) {
-        return await readSSE(res, onToken);
-      }
-
-      let detail = '';
-      try {
-        const j = await res.json();
-        detail = j.error || j.detail || j.message || JSON.stringify(j);
-      } catch (e) { detail = res.statusText; }
-
-      if (res.status === 404) {
-        throw new Error('No proxy at ' + endpoint + '. Check your Worker URL.');
-      }
-      if (res.status === 429 || res.status === 503) {
-        throw new Error('All worker keys are rate-limited. They auto-recover after cooldown.');
-      }
-      throw new Error(`Worker error ${res.status}: ${detail}`);
-    }
-
-    let lastErr = null;
-
-    for (let attempt = 0; attempt < pool.length; attempt++) {
-      const e = pickNextEntry();
-      if (!e) break;
-
-      updateStatus(`Thinking • ${e.label}`);
-
-      const headers = { 'Content-Type': 'application/json' };
-      if (e.key) headers['Authorization'] = 'Bearer ' + e.key;
-      if (e.target) headers['X-Proxy-Target'] = e.target;
-
-      let res;
-      try {
-        res = await fetch(endpoint, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            model: e.model,
-            messages: [
-              { role: 'system', content: 'You are Jogi IoT Search Engine, an expert coding and IoT assistant. Give clear, practical answers with code examples. Format code with markdown.' },
-              ...messages,
-              { role: 'user', content: image ? [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: image } }] : prompt }
-            ],
-            temperature: 0.2,
-            max_tokens: 2048,
-            stream: true
-          })
-        });
-      } catch (netErr) {
-        lastErr = new Error(
-          proxyBase
-            ? `Failed to reach proxy at ${endpoint} — check the URL and that the worker is deployed.`
-            : `Failed to reach ${endpoint} — hard-refresh (Ctrl+Shift+R). If this is GitHub Pages, set Proxy URL (sidebar) to your Cloudflare Worker address.`
-        );
-        continue;
-      }
-
-      if (res.ok) {
-        e.requests++;
-        e.state = 'active';
-        e.exhaustedUntil = 0;
-        persistPool();
-        renderPoolList();
-        return await readSSE(res, onToken);
-      }
-
-      let detail = '';
-      try {
-        const j = await res.json();
-        detail = (j.error && j.error.message) || j.detail || j.message || JSON.stringify(j);
-      } catch (err) { detail = res.statusText; }
-
-      if (res.status === 404) {
-        throw new Error('No proxy at ' + endpoint + '. Check your Worker URL or deploy the worker with /api route.');
-      }
-
-      if (res.status === 429) {
-        e.state = 'limited';
-        e.exhaustedUntil = Date.now() + COOLDOWN_MS;
-        persistPool();
-        renderPoolList();
-        lastErr = new Error('Every API is rate-limited (429). They auto-recover after cooldown — or press "↻ Reset API states".');
-        continue;
-      }
-
-      if (res.status === 401 || res.status === 403) {
-        e.state = 'invalid';
-        persistPool();
-        renderPoolList();
-        lastErr = new Error(`${e.label}: key rejected (${res.status}) — fix or remove that line. Rotated to next.`);
-        continue;
-      }
-
-      if (res.status === 400 || res.status === 402 || res.status === 404) {
-        e.state = 'invalid';
-        persistPool();
-        renderPoolList();
-        lastErr = new Error(`${e.label}: config problem (${res.status}) ${String(detail).slice(0, 100)} — rotated to next.`);
-        continue;
-      }
-
-      if (res.status >= 500) {
-        lastErr = new Error(`${e.label}: server error ${res.status} — trying next.`);
-        continue;
-      }
-
-      throw new Error(`${e.label} error ${res.status}: ${detail}`);
-    }
-
-    throw lastErr || new Error('No usable APIs right now. Wait for cooldown or press "↻ Reset API states".');
-  }
-
-  async function sendMessage() {
-    const input = $('input');
-    const text = input.value.trim();
-    if (!text || isLoading) return;
-
-    saveSettings();
-
-    isLoading = true;
-    $('sendBtn').disabled = true;
-    input.value = '';
-
-    try {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
-    } catch (e) {}
-
-    addMessage('user', text);
-    messages.push({ role: 'user', content: text });
-    trackConversation(text);
-
-    if (attachedDocs.length) {
-      const docs = attachedDocs.slice();
-      attachedDocs = [];
-      renderAttachRow();
-      docs.forEach(d => {
-        const m = '[📄 ' + d.name + ']
-
-' + d.text;
-        addMessage('user', m);
-        messages.push({ role: 'user', content: m });
-      });
-    }
-    const image = pendingImage ? pendingImage.dataUrl : null;
-    if (pendingImage) { pendingImage = null; renderAttachRow(); }
-
-    showTyping();
-    updateStatus('Thinking…');
-
-    let streamEl = null;
-    try {
-      const backend = $('backend').value;
-      const onToken = (accum) => {
-        if (!streamEl) {
-          removeTyping();
-          streamEl = addStreamingMessage();
-          updateStatus('Answering…');
-        }
-        renderStreaming(streamEl, accum);
-      };
-
-      const reply = backend === 'ollama' ? await callOllama(text) : await callPool(text, onToken, image);
-
-      removeTyping();
-      if (streamEl) {
-        finalizeStreaming(streamEl, reply);
-      } else {
-        addMessage('assistant', reply);
-      }
-      messages.push({ role: 'assistant', content: reply });
-      trackConversation();
-
-      if (/sing|song|music|melody|tune/i.test(text)) {
-        playMelody();
-        speakText(reply);
-      }
-
-      updateStatus('Ready • ' + (backend === 'pool' ? poolSummary() : 'no limits'));
-    } catch (err) {
-      removeTyping();
-      if (streamEl) {
-        streamEl.innerHTML += `<p style="color:#f85149"><em>⚠ ${err.message}</em></p>`;
-      } else {
-        addMessage('assistant', `**Error:** ${err.message}`);
-      }
-      updateStatus('Error • ' + poolSummary());
-    }
-
-    isLoading = false;
-    $('sendBtn').disabled = false;
-    input.focus();
-  }
-
-  loadSettings();
-  renderHistory();
-  loadServerKeys();
-  updateStatus('Ready • ' + poolSummary());
-
-  if ('serviceWorker' in navigator && location.protocol === 'https:') {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  }
-
-  let deferredPrompt = null;
-
-  function showInstallBar() { $('installBar').classList.add('show'); }
-  function hideInstallBar() { $('installBar').classList.remove('show'); }
-
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    showInstallBar();
+  $('proxyUrl').value = proxy;
+
+  $('ollamaUrl').value = localStorage.getItem('jogiOllamaUrl')||'http://localhost:11434';
+  if(localStorage.getItem('jogiTheme')==='light'){ document.body.classList.add('light'); $('themeBtn').textContent='Light'; }
+  buildPool(); renderHistory();
+}
+function save(){
+  localStorage.setItem('jogiBackend',$('backend').value);
+  localStorage.setItem('jogiModel',$('model').value);
+  localStorage.setItem('jogiKeys',$('nvidiaKeys').value);
+  localStorage.setItem('jogiPool',$('pool').value);
+  localStorage.setItem('jogiProxyUrl',$('proxyUrl').value);
+  localStorage.setItem('jogiOllamaUrl',$('ollamaUrl').value);
+  buildPool();
+}
+function clearAll(){ if(!confirm('Clear all data?'))return; localStorage.clear(); location.reload(); }
+
+function buildPool(){
+  const model = $('model').value.trim()||DEFAULT_MODEL;
+  const entries = $('nvidiaKeys').value.split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean).slice(0,10).map(k=>({id:'NVIDIA|'+k,label:'NVIDIA',key:k,model,target:null}));
+  $('pool').value.split('\n').map(s=>s.trim()).filter(l=>l&&!l.startsWith('#')).forEach(line=>{
+    const parts=line.split('|').map(s=>s.trim()); if(!parts[0])return;
+    const p=PRESETS[parts[0].toLowerCase()];
+    if(p){ entries.push({id:p.name+'|'+parts[1],label:p.name,key:parts[1]||'',model:parts[2]||p.model,target:p.url||null}); return;}
+    if(parts[0].startsWith('http')){ let host='custom'; try{host=new URL(parts[0]).hostname}catch(e){} entries.push({id:parts[0]+'|'+parts[1],label:host,key:parts[1]||'',model:parts[2]||model,target:parts[0]}); return;}
+    const d=detectKey(line); if(d){const p=PRESETS[d]; entries.push({id:p.name+'|'+line,label:p.name,key:line,model:p.model,target:p.url||null});}
   });
+  let saved={}; try{saved=JSON.parse(localStorage.getItem('jogiKeyStates')||'{}');}catch(e){}
+  pool=entries.map(e=>{const prev=saved[e.id]||saved[e.key]; return Object.assign(e,prev?{requests:prev.requests||0,state:prev.state||'active',exhaustedUntil:prev.exhaustedUntil||0}:{requests:0,state:'active',exhaustedUntil:0});});
+  if(currentIndex>=pool.length)currentIndex=-1; persist(); renderPool();
+}
+function persist(){ const obj={}; pool.forEach(e=>{obj[e.id]={requests:e.requests,state:e.state,exhaustedUntil:e.exhaustedUntil};}); localStorage.setItem('jogiKeyStates',JSON.stringify(obj)); }
+function usable(e){ if(e.state==='invalid')return false; if(e.state==='limited'&&Date.now()<e.exhaustedUntil)return false; return true; }
+function pickNext(){ if(!pool.length)return null; for(let i=0;i<pool.length;i++){currentIndex=(currentIndex+1)%pool.length; const e=pool[currentIndex]; if(usable(e))return e;} return null; }
+function mask(k){ return k&&k.length>8?'...'+k.slice(-4):'...'; }
+function renderPool(){ const el=$('keyList'); if(!pool.length){el.innerHTML='<div style="color:var(--muted);font-size:0.75rem">No APIs - add keys or use Proxy URL</div>'; return;} el.innerHTML=pool.map((e,i)=>{ const ok=usable(e); const badge=e.state==='invalid'?'<span class="kb invalid">invalid</span>':(!ok?'<span class="kb limited">cooldown</span>':'<span class="kb ok">active</span>'); const cur=i===currentIndex?' <':''; return `<div class="krow">#${i+1} ${e.label} ${mask(e.key)} <span style="opacity:0.6">${e.model}</span> ${badge}<span class="kreq">${e.requests}${cur}</span></div>`;}).join(''); }
+function resetPool(){ pool.forEach(e=>{e.state='active';e.exhaustedUntil=0;}); persist(); renderPool(); status('Ready'); }
+function status(t){ $('statusText').textContent=t; }
+function summary(){ if(!pool.length)return'add APIs or Proxy URL'; const c=pool.filter(e=>!usable(e)).length; const r=pool.reduce((a,e)=>a+e.requests,0); return `api ${Math.max(currentIndex,0)+1}/${pool.length} | ${r} req | ${c} cooling`; }
 
-  $('installBtn').onclick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    hideInstallBar();
-  };
+let conversations=[], activeId=null;
+try{conversations=JSON.parse(localStorage.getItem('jogiChats')||'[]');}catch(e){}
+function saveChats(){ localStorage.setItem('jogiChats',JSON.stringify(conversations.slice(-30))); }
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function renderHistory(){ const el=$('history'); if(!conversations.length){el.innerHTML='<div style="color:var(--muted);font-size:0.78rem;padding:4px">No searches yet</div>'; return;} el.innerHTML=conversations.slice().reverse().map(c=>`<div class="history-item ${c.id===activeId?'active':''}" onclick="loadChat(${c.id})">${esc(c.title)}</div>`).join(''); }
+function track(title){ if(!activeId){activeId=Date.now(); conversations.push({id:activeId,title:(title||'search').slice(0,42),messages:[]}); if(conversations.length>30)conversations=conversations.slice(-30);} const conv=conversations.find(c=>c.id===activeId); if(conv)conv.messages=messages.slice(-40); saveChats(); renderHistory(); }
+function loadChat(id){ const conv=conversations.find(c=>c.id===id); if(!conv)return; activeId=id; messages=conv.messages.slice(); $('chat').innerHTML=''; messages.forEach(m=>addMsg(m.role,m.content)); renderHistory(); }
 
-  window.addEventListener('appinstalled', () => hideInstallBar());
+let pendingImg=null, attachedDocs=[];
+function loadImg(file,cb){ const r=new FileReader(); r.onload=()=>{const img=new Image(); img.onload=()=>{let w=img.width,h=img.height; const max=1024; if(w>max||h>max){const r=max/Math.max(w,h);w=Math.round(w*r);h=Math.round(h*r);} const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h); cb({name:file.name,dataUrl:cv.toDataURL('image/jpeg',0.85)});}; img.src=r.result;}; r.readAsDataURL(file); }
+function handleFiles(input){ const files=Array.from(input.files||[]); input.value=''; files.forEach(f=>{ if(f.type.startsWith('image/')){ loadImg(f,r=>{pendingImg=r; renderAttach();}); } else { const r=new FileReader(); r.onload=()=>{attachedDocs.push({name:f.name,text:String(r.result).slice(0,20000)}); renderAttach();}; r.readAsText(f); } }); }
+function renderAttach(){ const row=$('attachRow'); row.innerHTML=''; if(pendingImg)row.innerHTML+=`<div class="attach-chip"><img src="${pendingImg.dataUrl}"/><span>${pendingImg.name}</span><button onclick="pendingImg=null;renderAttach()">x</button></div>`; attachedDocs.forEach((d,i)=>{row.innerHTML+=`<div class="attach-chip"><span>${d.name}</span><button onclick="attachedDocs.splice(${i},1);renderAttach()">x</button></div>`;}); }
+function startVoice(){ const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){alert('Voice input needs Chrome/Edge');return;} const rec=new SR(); rec.lang='en-US'; rec.interimResults=false; $('micBtn').textContent='...'; rec.onresult=e=>{$('input').value=e.results[0][0].transcript;}; rec.onend=()=>{$('micBtn').textContent='Mic';}; rec.onerror=()=>{$('micBtn').textContent='Mic';}; rec.start(); }
+function toggleTheme(){ document.body.classList.toggle('light'); const light=document.body.classList.contains('light'); localStorage.setItem('jogiTheme',light?'light':'dark'); $('themeBtn').textContent=light?'Light':'Dark'; }
 
-  if (window.matchMedia('(display-mode: standalone)').matches) {
-    hideInstallBar();
+function setHint(t){ $('input').value=t; $('input').focus(); }
+function newChat(){ messages=[]; activeId=null; renderHistory(); $('chat').innerHTML='<div class="empty" id="empty"><h2>Ask anything - code, IoT, docs</h2><p>Add API keys in sidebar, or leave empty and use Proxy URL to a worker with JOGI_KEYS secret.</p></div>'; }
+function handleKey(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();} }
+
+function addMsg(role,content){
+  const empty=$('empty'); if(empty)empty.remove();
+  const chat=$('chat'); const div=document.createElement('div'); div.className='message '+role;
+  let html=content; if(role==='assistant')html=marked.parse(content);
+  div.innerHTML=`<div class="avatar ${role==='user'?'user':'ai'}">${role==='user'?'You':'JI'}</div><div class="content">${html}</div>`;
+  chat.appendChild(div); chat.scrollTop=chat.scrollHeight;
+  div.querySelectorAll('pre code').forEach(el=>hljs.highlightElement(el));
+  if(role==='assistant')addActions(div.querySelector('.content'),content);
+}
+function addActions(container,raw){
+  if(container.querySelector('.msg-actions'))return;
+  const bar=document.createElement('div'); bar.className='msg-actions';
+  const copy=document.createElement('button'); copy.className='copy-btn'; copy.textContent='Copy'; copy.onclick=()=>{navigator.clipboard.writeText(raw); copy.textContent='Copied'; setTimeout(()=>copy.textContent='Copy',1500);}; bar.appendChild(copy);
+  const speak=document.createElement('button'); speak.className='copy-btn'; speak.textContent='Speak'; speak.onclick=()=>{ if('speechSynthesis'in window){const u=new SpeechSynthesisUtterance(raw.replace(/[#*`>|_~]/g,' ').replace(/\s+/g,' ').slice(0,1500)); window.speechSynthesis.speak(u);} }; bar.appendChild(speak);
+  const dl=document.createElement('button'); dl.className='copy-btn'; dl.textContent='Save'; dl.onclick=()=>{const blob=new Blob([raw],{type:'text/markdown'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='jogi-answer.md'; a.click();}; bar.appendChild(dl);
+  container.appendChild(bar);
+  container.querySelectorAll('pre').forEach(pre=>{ if(pre.querySelector('.code-copy'))return; pre.style.position='relative'; const b=document.createElement('button'); b.className='copy-btn code-copy'; b.textContent='Copy'; b.onclick=()=>{const code=pre.querySelector('code'); navigator.clipboard.writeText(code?code.innerText:pre.innerText); b.textContent='OK'; setTimeout(()=>b.textContent='Copy',1500);}; pre.appendChild(b); });
+}
+function showTyping(){ const chat=$('chat'); const div=document.createElement('div'); div.className='message assistant'; div.id='typing'; div.innerHTML='<div class="avatar ai">JI</div><div class="content"><div class="typing"><span></span><span></span><span></span></div></div>'; chat.appendChild(div); chat.scrollTop=chat.scrollHeight; }
+function removeTyping(){ const t=$('typing'); if(t)t.remove(); }
+
+async function readSSE(res,onToken){
+  const reader=res.body.getReader(); const decoder=new TextDecoder(); let buffer='',full='';
+  while(true){ const {done,value}=await reader.read(); if(done)break; buffer+=decoder.decode(value,{stream:true}); const lines=buffer.split('\n'); buffer=lines.pop()||''; for(const line of lines){ const t=line.trim(); if(!t.startsWith('data:'))continue; const payload=t.slice(5).trim(); if(!payload||payload==='[DONE]')continue; try{ const j=JSON.parse(payload); const delta=(j.choices&&j.choices[0]&&j.choices[0].delta&&j.choices[0].delta.content)||''; if(delta){full+=delta; if(onToken)onToken(full);} }catch(e){} } }
+  if(!full)throw new Error('Empty response'); return full;
+}
+
+async function callPool(prompt,onToken,image){
+  const proxyBase=$('proxyUrl').value.trim().replace(/\/+$/,'');
+  const endpoint=proxyBase||'/api';
+  const hasClientKeys=pool.length>0&&pool.some(e=>e.key);
+
+  // Server-only mode: no client keys, proxy set
+  if(!hasClientKeys&&proxyBase){
+    status('Thinking...');
+    let res;
+    try{ res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:$('model').value.trim()||DEFAULT_MODEL,messages:[{role:'system',content:'You are Jogi IoT Search Engine, an expert coding and IoT assistant. Give clear, practical answers with code examples. Format code with markdown.'},...messages,{role:'user',content:image?[{type:'text',text:prompt},{type:'image_url',image_url:{url:image}}]:prompt}],temperature:0.2,max_tokens:2048,stream:true})}); }
+    catch(e){ throw new Error('Failed to reach proxy at '+endpoint); }
+    if(res.ok)return await readSSE(res,onToken);
+    let detail=''; try{const j=await res.json();detail=j.error||j.detail||JSON.stringify(j);}catch(e){detail=res.statusText;}
+    if(res.status===404)throw new Error('No proxy at '+endpoint);
+    if(res.status===429||res.status===503)throw new Error('All worker keys rate-limited. Wait for cooldown.');
+    throw new Error('Worker error '+res.status+': '+detail);
   }
 
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  if (isIOS && !window.matchMedia('(display-mode: standalone)').matches) {
-    $('ibMsg').innerHTML = '📲 To install on iPhone: tap <b>Share</b> → <b>Add to Home Screen</b>.';
-    $('installBtn').style.display = 'none';
-    showInstallBar();
+  if(!pool.length)throw new Error('Add API keys or set Proxy URL');
+  let lastErr=null;
+  for(let attempt=0;attempt<pool.length;attempt++){
+    const e=pickNext(); if(!e)break;
+    status('Thinking | '+e.label);
+    const headers={'Content-Type':'application/json'}; if(e.key)headers['Authorization']='Bearer '+e.key; if(e.target)headers['X-Proxy-Target']=e.target;
+    let res;
+    try{ res=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify({model:e.model,messages:[{role:'system',content:'You are Jogi IoT Search Engine, an expert coding and IoT assistant. Give clear, practical answers with code examples. Format code with markdown.'},...messages,{role:'user',content:image?[{type:'text',text:prompt},{type:'image_url',image_url:{url:image}}]:prompt}],temperature:0.2,max_tokens:2048,stream:true})}); }
+    catch(e){ lastErr=new Error('Network error - check Proxy URL'); continue; }
+    if(res.ok){e.requests++;e.state='active';e.exhaustedUntil=0;persist();renderPool();return await readSSE(res,onToken);}
+    let detail=''; try{const j=await res.json();detail=(j.error&&j.error.message)||j.detail||JSON.stringify(j);}catch(err){detail=res.statusText;}
+    if(res.status===429){e.state='limited';e.exhaustedUntil=Date.now()+COOLDOWN;persist();renderPool();lastErr=new Error('Rate limited - auto-recovering');continue;}
+    if(res.status===401||res.status===403){e.state='invalid';persist();renderPool();lastErr=new Error(e.label+' key rejected');continue;}
+    if(res.status>=500){lastErr=new Error(e.label+' server error '+res.status);continue;}
+    throw new Error(e.label+' error '+res.status+': '+detail);
   }
+  throw lastErr||new Error('No usable APIs');
+}
+
+async function send(){
+  const input=$('input'); const text=input.value.trim(); if(!text||isLoading)return;
+  save(); isLoading=true; $('sendBtn').disabled=true; input.value='';
+  addMsg('user',text); messages.push({role:'user',content:text}); track(text);
+  const image=pendingImg?pendingImg.dataUrl:null; if(pendingImg){pendingImg=null;renderAttach();}
+  if(attachedDocs.length){ const docs=attachedDocs.slice(); attachedDocs=[]; renderAttach(); docs.forEach(d=>{const m='[Doc: '+d.name+']\n\n'+d.text; addMsg('user',m); messages.push({role:'user',content:m}); }); }
+  showTyping(); status('Thinking...');
+  let streamEl=null;
+  try{
+    const backend=$('backend').value;
+    const onToken=(accum)=>{ if(!streamEl){removeTyping(); const chat=$('chat'); const div=document.createElement('div'); div.className='message assistant'; div.innerHTML='<div class="avatar ai">JI</div><div class="content"></div>'; chat.appendChild(div); chat.scrollTop=chat.scrollHeight; streamEl=div.querySelector('.content'); status('Answering...'); } streamEl.innerHTML=marked.parse(accum); $('chat').scrollTop=$('chat').scrollHeight; };
+    const reply=await callPool(text,onToken,image);
+    removeTyping();
+    if(streamEl){ streamEl.querySelectorAll('pre code').forEach(b=>hljs.highlightElement(b)); addActions(streamEl,reply); }
+    else{ addMsg('assistant',reply); }
+    messages.push({role:'assistant',content:reply}); track();
+    status('Ready | '+summary());
+  }catch(err){
+    removeTyping();
+    if(streamEl)streamEl.innerHTML+='<p style="color:#f85149"><b>Error:</b> '+err.message+'</p>';
+    else addMsg('assistant','**Error:** '+err.message);
+    status('Error');
+  }
+  isLoading=false; $('sendBtn').disabled=false; input.focus();
+}
+
+async function genImage(){
+  const prompt=$('input').value.trim()||'A futuristic IoT city at night';
+  if(isLoading)return; isLoading=true; $('sendBtn').disabled=true;
+  addMsg('user','Generate image: '+prompt); messages.push({role:'user',content':'Generate image: '+prompt});
+  showTyping(); status('Drawing...');
+  try{
+    const proxyBase=$('proxyUrl').value.trim().replace(/\/+$/,'');
+    const endpoint=proxyBase||'/api';
+    const res=await fetch(endpoint+'/gen',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok||!data.image)throw new Error(data.error||'Image gen failed');
+    removeTyping();
+    addMsg('assistant','![generated](data:image/png;base64,'+data.image+')\n\n_AI image: '+prompt+'_');
+    messages.push({role:'assistant',content':'![generated](data:image/png;base64,'+data.image+')'}); track();
+    status('Ready');
+  }catch(err){ removeTyping(); addMsg('assistant','**Error:** '+err.message); status('Error'); }
+  isLoading=false; $('sendBtn').disabled=false;
+}
+
+load();
+
+// PWA
+if('serviceWorker'in navigator&&location.protocol==='https:'){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+
+// Install prompt
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('installBar').classList.add('show');});
+$('installBtn').onclick=async()=>{if(!deferredPrompt)return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; $('installBar').classList.remove('show');};
+window.addEventListener('appinstalled',()=>{$('installBar').classList.remove('show');});
+if(window.matchMedia('(display-mode: standalone)').matches){$('installBar').classList.remove('show');}
+function hideInstall(){$('installBar').classList.remove('show');}
 </script>
 </body>
 </html>
