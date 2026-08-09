@@ -371,8 +371,7 @@ async function send(){
   messages.push({role: 'user', content: fullPrompt});
   track(fullPrompt);
 
-  const proxyBase = $('proxyUrl').value.trim().replace(/\/+$/,'');
-  const endpoint = proxyBase || '/api';
+  const endpoint = $('proxyUrl').value.trim() || 'https://jogi-iot-search-engine.jogendra-dipeng11.workers.dev';
 
   const chat = $('chat');
   const div = document.createElement('div');
@@ -399,7 +398,7 @@ async function send(){
     if(!res.ok){
       let errDetail = '';
       try{ const j = await res.json(); errDetail = j.error || ''; }catch(e){ errDetail = res.statusText; }
-      throw new Error(errDetail || 'Worker HTTP error ' + res.status);
+      throw new Error(errDetail || 'Server error ' + res.status);
     }
 
     const reply = await readSSE(res, (accum) => {
