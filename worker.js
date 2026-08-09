@@ -12,7 +12,14 @@ export default {
       });
     }
 
-    if (request.method === "POST" && (url.pathname === "/api" || url.pathname === "/api/search")) {
+    if (request.method === "GET") {
+      return new Response("Jogi IoT Search Engine Worker Active & Ready", {
+        status: 200,
+        headers: { "Content-Type": "text/plain", "Access-Control-Allow-Origin": "*" }
+      });
+    }
+
+    if (request.method === "POST") {
       try {
         const body = await request.json();
         let keysString = env.JOGI_KEYS || "";
@@ -78,6 +85,6 @@ export default {
       }
     }
 
-    return new Response("Jogi IoT Search Engine Worker Active", { status: 200 });
+    return new Response("Method Not Allowed", { status: 405, headers: { "Access-Control-Allow-Origin": "*" } });
   }
 };
