@@ -1,6 +1,5 @@
-// Jogi IoT Search Engine — Cloudflare Worker
-// ALL keys come from Cloudflare Secrets (JOGI_KEYS + individual provider keys)
-// Frontend sends NO Authorization header — worker injects it server-side.
+// Jogi IoT Search Engine - Cloudflare Worker
+// All keys from Cloudflare Secrets. No client keys needed.
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -23,98 +22,93 @@ const PRESETS = {
   cohere:      { name: 'Cohere',      url: 'https://api.cohere.ai/compatibility/v1/chat/completions',       model: 'command-r-plus' }
 };
 
-// In-memory cooldown tracking (persists within worker instance)
 const cooldowns = new Map();
 const COOLDOWN_MS = 10 * 60 * 1000;
 
-function jsonResponse(data, status = 200) {
+function jsonResponse(data, status) {
   return new Response(JSON.stringify(data), {
-    status,
+    status: status || 200,
     headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
   });
 }
 
 function detectPreset(key) {
-  if (/^nvapi-/.test(key)) return 'nvidia';
-  if (/^gsk_/.test(key)) return 'groq';
-  if (/^AIza/.test(key)) return 'gemini';
-  if (/^sk-or-/.test(key)) return 'openrouter';
-  if (/^hf_/.test(key)) return 'huggingface';
-  if (/^ghp_/.test(key)) return 'github';
-  if (/^csk-/.test(key)) return 'cerebras';
+  if (key.indexOf('nvapi-') === 0) return 'nvidia';
+  if (key.indexOf('gsk_') === 0) return 'groq';
+  if (key.indexOf('AIza') === 0) return 'gemini';
+  if (key.indexOf('sk-or-') === 0) return 'openrouter';
+  if (key.indexOf('hf_') === 0) return 'huggingface';
+  if (key.indexOf('ghp_') === 0) return 'github';
+  if (key.indexOf('csk-') === 0) return 'cerebras';
   return null;
+}
+
+function splitKeys(raw) {
+  const result = [];
+  if (!raw) return result;
+  const lines = raw.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const parts = line.split(',');
+    for (let j = 0; j < parts.length; j++) {
+      const part = parts[j].trim();
+      if (part) result.push(part);
+    }
+  }
+  return result;
 }
 
 function parseJogiKeys(raw) {
   const pool = [];
-  if (!raw) return pool;
-
-  // Split by comma OR newline
-  const entries = raw.split(/[,
-]+/).map(s => s.trim()).filter(Boolean);
-
-  for (const entry of entries) {
-    // Format: preset|key|model  (pipe-separated)
-    if (entry.includes('|')) {
-      const parts = entry.split('|').map(s => s.trim());
-      const presetKey = (parts[0] || '').toLowerCase();
-      const key = parts[1] || '';
-      const model = parts[2] || '';
+  const entries = splitKeys(raw);
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
+    if (entry.indexOf('|') !== -1) {
+      const parts = entry.split('|');
+      const presetKey = (parts[0] || '').toLowerCase().trim();
+      const key = (parts[1] || '').trim();
+      const model = (parts[2] || '').trim();
       if (!key) continue;
-
       const p = PRESETS[presetKey];
       if (p) {
-        pool.push({ id: pool.length + 1, label: p.name, preset: presetKey, key, model: model || p.model, url: p.url });
-      } else if (presetKey.startsWith('http')) {
-        pool.push({ id: pool.length + 1, label: 'Custom', preset: 'custom', key, model: model || 'meta/llama-3.3-70b-instruct', url: presetKey });
+        pool.push({ id: pool.length + 1, label: p.name, preset: presetKey, key: key, model: model || p.model, url: p.url });
+      } else if (presetKey.indexOf('http') === 0) {
+        pool.push({ id: pool.length + 1, label: 'Custom', preset: 'custom', key: key, model: model || 'meta/llama-3.3-70b-instruct', url: presetKey });
       }
       continue;
     }
-
-    // Bare key — auto-detect provider from prefix
     const detected = detectPreset(entry);
     if (detected) {
       const p = PRESETS[detected];
       pool.push({ id: pool.length + 1, label: p.name, preset: detected, key: entry, model: p.model, url: p.url });
     }
   }
-
   return pool;
 }
 
 function buildKeyPool(env) {
   const pool = [];
-
-  // 1) Individual provider secrets
   const INDIVIDUAL = [
-    ['NVIDIA_KEY', 'nvidia'],
-    ['GROQ_KEY', 'groq'],
-    ['GEMINI_KEY', 'gemini'],
-    ['OPENROUTER_KEY', 'openrouter'],
-    ['MISTRAL_KEY', 'mistral'],
-    ['CEREBRAS_KEY', 'cerebras'],
-    ['SAMBANOVA_KEY', 'sambanova'],
-    ['TOGETHER_KEY', 'together'],
-    ['GITHUB_KEY', 'github'],
-    ['HUGGINGFACE_KEY', 'huggingface'],
-    ['COHERE_KEY', 'cohere']
+    ['NVIDIA_KEY', 'nvidia'], ['GROQ_KEY', 'groq'], ['GEMINI_KEY', 'gemini'],
+    ['OPENROUTER_KEY', 'openrouter'], ['MISTRAL_KEY', 'mistral'], ['CEREBRAS_KEY', 'cerebras'],
+    ['SAMBANOVA_KEY', 'sambanova'], ['TOGETHER_KEY', 'together'], ['GITHUB_KEY', 'github'],
+    ['HUGGINGFACE_KEY', 'huggingface'], ['COHERE_KEY', 'cohere']
   ];
-
-  for (const [secretName, preset] of INDIVIDUAL) {
+  for (let i = 0; i < INDIVIDUAL.length; i++) {
+    const secretName = INDIVIDUAL[i][0];
+    const preset = INDIVIDUAL[i][1];
     const key = env[secretName];
-    if (key && key.trim()) {
+    if (key && key.trim && key.trim()) {
       const p = PRESETS[preset];
-      pool.push({ id: pool.length + 1, label: p.name, preset, key: key.trim(), model: p.model, url: p.url });
+      pool.push({ id: pool.length + 1, label: p.name, preset: preset, key: key.trim(), model: p.model, url: p.url });
     }
   }
-
-  // 2) JOGI_KEYS secret — supports comma-separated, newline-separated, bare keys, pipe-format
   const jogiPool = parseJogiKeys(env.JOGI_KEYS);
-  for (const e of jogiPool) {
-    e.id = pool.length + 1;
-    pool.push(e);
+  for (let i = 0; i < jogiPool.length; i++) {
+    jogiPool[i].id = pool.length + 1;
+    pool.push(jogiPool[i]);
   }
-
   return pool;
 }
 
@@ -123,109 +117,86 @@ function isOnCooldown(entry) {
   return until && Date.now() < until;
 }
 
-function markCooldown(entry) {
-  cooldowns.set(entry.id, Date.now() + COOLDOWN_MS);
-}
-
-function markInvalid(entry) {
-  cooldowns.set(entry.id, Date.now() + 24 * 60 * 60 * 1000); // 24h
-}
+function markCooldown(entry) { cooldowns.set(entry.id, Date.now() + COOLDOWN_MS); }
+function markInvalid(entry) { cooldowns.set(entry.id, Date.now() + 24 * 60 * 60 * 1000); }
 
 export default {
   async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: CORS_HEADERS, status: 204 });
     }
-
     const url = new URL(request.url);
     const path = url.pathname;
-
-    if (path === '/api/keys' || path === '/keys') {
-      return handleKeys(request, env);
-    }
-    if (path === '/api/gen' || path === '/gen') {
-      return handleGen(request, env);
-    }
-    if (path === '/api' || path === '/api/chat/completions') {
-      return handleChat(request, env);
-    }
-
-    if (path === '/' || path === '/index.html') {
-      return new Response('OK', { headers: CORS_HEADERS });
-    }
-
+    if (path === '/api/keys' || path === '/keys') return handleKeys(request, env);
+    if (path === '/api/gen' || path === '/gen') return handleGen(request, env);
+    if (path === '/api' || path === '/api/chat/completions') return handleChat(request, env);
+    if (path === '/' || path === '/index.html') return new Response('OK', { headers: CORS_HEADERS });
     return new Response('Not Found', { status: 404, headers: CORS_HEADERS });
   }
 };
 
 async function handleKeys(request, env) {
   const pool = buildKeyPool(env);
-  const masked = pool.map(e => ({
-    preset: e.preset,
-    label: e.label,
-    model: e.model,
-    target: e.url,
-    key: e.key ? '…' + e.key.slice(-4) : ''
-  }));
+  const masked = [];
+  for (let i = 0; i < pool.length; i++) {
+    const e = pool[i];
+    masked.push({
+      preset: e.preset,
+      label: e.label,
+      model: e.model,
+      target: e.url,
+      key: e.key ? '...' + e.key.slice(-4) : ''
+    });
+  }
   return jsonResponse({ keys: masked, count: pool.length });
 }
 
 async function handleChat(request, env) {
   const pool = buildKeyPool(env);
   if (!pool.length) {
-    return jsonResponse({ error: 'No API keys configured in worker secrets. Add JOGI_KEYS or individual provider secrets in Cloudflare dashboard.' }, 500);
+    return jsonResponse({ error: 'No API keys configured in worker secrets.' }, 500);
   }
-
   let body;
   try {
     body = await request.json();
   } catch (e) {
     return jsonResponse({ error: 'Invalid JSON body' }, 400);
   }
-
   const clientModel = body.model;
   let lastErr = null;
-
-  for (const entry of pool) {
+  for (let i = 0; i < pool.length; i++) {
+    const entry = pool[i];
     if (isOnCooldown(entry)) continue;
-
     const targetUrl = entry.url;
     const model = clientModel || entry.model;
-
-    const payload = { ...body, model };
-
+    const payload = Object.assign({}, body, { model: model });
     try {
       const res = await fetch(targetUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${entry.key}`
+          'Authorization': 'Bearer ' + entry.key
         },
         body: JSON.stringify(payload)
       });
-
       if (res.status === 429) {
         markCooldown(entry);
-        lastErr = new Error(`${entry.label} rate limited (429)`);
+        lastErr = entry.label + ' rate limited';
         continue;
       }
-
       if (res.status === 401 || res.status === 403) {
         markInvalid(entry);
-        lastErr = new Error(`${entry.label} key rejected (${res.status})`);
+        lastErr = entry.label + ' key rejected';
         continue;
       }
-
       if (res.status >= 500) {
-        lastErr = new Error(`${entry.label} server error ${res.status}`);
+        lastErr = entry.label + ' server error ' + res.status;
         continue;
       }
-
       if (!res.ok) {
-        lastErr = new Error(`${entry.label} error ${res.status}`);
+        lastErr = entry.label + ' error ' + res.status;
         continue;
       }
-
       return new Response(res.body, {
         status: res.status,
         statusText: res.statusText,
@@ -235,16 +206,13 @@ async function handleChat(request, env) {
           'X-Used-Provider': entry.label
         }
       });
-
     } catch (netErr) {
-      lastErr = new Error(`${entry.label} network error: ${netErr.message}`);
+      lastErr = entry.label + ' network error';
       continue;
     }
   }
-
   return jsonResponse({
-    error: lastErr ? lastErr.message : 'All APIs exhausted. Wait for cooldown or add more keys in worker secrets.',
-    detail: 'Every configured key hit a quota, was rejected, or failed. Keys auto-recover after 10 minutes.'
+    error: lastErr || 'All APIs exhausted. Wait for cooldown or add more keys.'
   }, 503);
 }
 
@@ -255,26 +223,28 @@ async function handleGen(request, env) {
   } catch (e) {
     return jsonResponse({ error: 'Invalid JSON body' }, 400);
   }
-
   const prompt = body.prompt;
   if (!prompt) return jsonResponse({ error: 'Prompt required' }, 400);
-
   const pool = buildKeyPool(env);
-  const nvidiaEntry = pool.find(e => e.preset === 'nvidia');
-
-  if (!nvidiaEntry) {
-    return jsonResponse({ error: 'No NVIDIA key found in worker secrets for image generation.' }, 400);
+  let nvidiaEntry = null;
+  for (let i = 0; i < pool.length; i++) {
+    if (pool[i].preset === 'nvidia') {
+      nvidiaEntry = pool[i];
+      break;
+    }
   }
-
+  if (!nvidiaEntry) {
+    return jsonResponse({ error: 'No NVIDIA key found for image generation.' }, 400);
+  }
   try {
     const res = await fetch('https://ai.api.nvidia.com/v1/genai/stabilityai/stable-diffusion-xl', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${nvidiaEntry.key}`
+        'Authorization': 'Bearer ' + nvidiaEntry.key
       },
       body: JSON.stringify({
-        prompt,
+        prompt: prompt,
         negative_prompt: '',
         sampler: 'K_EULER_ANCESTRAL',
         steps: 25,
@@ -284,20 +254,16 @@ async function handleGen(request, env) {
         width: 512
       })
     });
-
     if (!res.ok) {
       const text = await res.text();
-      return jsonResponse({ error: `Image generation failed: ${res.status} ${text}` }, res.status);
+      return jsonResponse({ error: 'Image generation failed: ' + res.status }, res.status);
     }
-
     const data = await res.json();
-    const image = data.image || data.images?.[0]?.image || data.artifacts?.[0]?.base64 || data.data?.[0]?.b64_json;
-
+    const image = data.image || (data.images && data.images[0] && data.images[0].image) || (data.artifacts && data.artifacts[0] && data.artifacts[0].base64) || (data.data && data.data[0] && data.data[0].b64_json);
     if (!image) {
       return jsonResponse({ error: 'No image returned from API' }, 500);
     }
-
-    return jsonResponse({ image });
+    return jsonResponse({ image: image });
   } catch (err) {
     return jsonResponse({ error: err.message }, 500);
   }
