@@ -63,10 +63,8 @@ async function fetchWithKeyRotation(url, options, retries = 0) {
       throw new Error(`NVIDIA API Error (${response.status}): ${responseText}`);
     }
 
-    // Return successful response text parsed back into a mock response object
     return {
       status: response.status,
-      text: async () => responseText,
       json: async () => JSON.parse(responseText)
     };
   } catch (error) {
@@ -84,6 +82,7 @@ app.all('/api/nvidia/chat/completions', async (req, res) => {
 
     const targetUrl = 'https://integrate.api.nvidia.com/v1/chat/completions';
     
+    // Explicitly enforce the standard NVIDIA global model path
     const requestBody = {
       model: "meta/llama-3.3-70b-instruct",
       messages: req.body && req.body.messages ? req.body.messages : [{ role: "user", content: "Hello" }],
@@ -110,5 +109,5 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} with robust key rotation.`);
+  console.log(`Server running on port ${PORT} with clean global model routing.`);
 });
