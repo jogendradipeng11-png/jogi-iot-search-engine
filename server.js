@@ -63,7 +63,7 @@ async function fetchWithKeyRotation(url, options, retries = 0) {
     if (!response.ok) {
       const errText = await response.text();
       console.warn(`[Key Failed] Key index ${currentKeyIndex} returned status ${response.status}: ${errText}`);
-      if (response.status === 429 || response.status === 401 || response.status === 403 || response.status === 422) {
+      if (response.status === 429 || response.status === 401 || response.status === 403 || response.status === 422 || response.status === 404) {
         return fetchWithKeyRotation(url, options, retries + 1);
       }
       throw new Error(`NVIDIA API Error (${response.status}): ${errText}`);
@@ -89,9 +89,9 @@ app.all('/api/nvidia/chat/completions', async (req, res) => {
 
     const targetUrl = 'https://integrate.api.nvidia.com/v1/chat/completions';
     
-    // Use a widely supported standard NVIDIA NIM model string
+    // Use the official current NVIDIA NIM model identifier
     const requestBody = {
-      model: "meta/llama3-70b-instruct",
+      model: "meta/llama-3.3-70b-instruct",
       messages: req.body && req.body.messages ? req.body.messages : [{ role: "user", content: "Hello" }],
       temperature: 0.3,
       max_tokens: 2048,
