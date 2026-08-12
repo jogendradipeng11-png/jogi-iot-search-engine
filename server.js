@@ -48,6 +48,7 @@ async function fetchWithKeyRotation(url, options, retries = 0) {
   }
 
   const apiKey = getNextApiKey();
+  console.log(`[Key Rotation] Trying key index ${currentKeyIndex} (Attempt ${retries + 1} of ${keys.length})`);
   
   const headers = {
     ...options.headers,
@@ -56,22 +57,22 @@ async function fetchWithKeyRotation(url, options, retries = 0) {
   };
 
   try {
-    console.log(`Attempting request with key index ${currentKeyIndex} (Retries: ${retries})`);
     const response = await fetch(url, { ...options, headers });
 
-    if (response.status === 429 || response.status === 401 || response.status === 403) {
-      console.warn(`API key failed with status ${response.status}. Rotating to next key...`);
+    if (response.status === 429 || response.status === 401 || response.status === 403 || response.status === 422) {
+      const errText = await response.text();
+      console.warn(`[Key Failed] Key index ${currentKeyIndex} returned status ${response.status}: ${errText}`);
       return fetchWithKeyRotation(url, options, retries + 1);
     }
 
     return response;
   } catch (error) {
-    console.warn(`Network error with key, retrying...`, error.message);
+    console.warn(`[Network Error] Retrying with next key...`, error.message);
     return fetchWithKeyRotation(url, options, retries + 1);
   }
 }
 
-// NVIDIA API Proxy Endpoint (Forces correct model automatically)
+// NVIDIA API Proxy Endpoint
 app.all('/api/nvidia/chat/completions', async (req, res) => {
   try {
     const keysCount = getApiKeyPool().length;
@@ -83,7 +84,6 @@ app.all('/api/nvidia/chat/completions', async (req, res) => {
 
     const targetUrl = 'https://integrate.api.nvidia.com/v1/chat/completions';
     
-    // Force the correct NVIDIA model on the server side so the frontend doesn't need to specify it
     if (!req.body) req.body = {};
     req.body.model = 'nvidia/llama-3.1-nemotron-70b-instruct';
 
@@ -100,14 +100,14 @@ app.all('/api/nvidia/chat/completions', async (req, res) => {
       const data = JSON.parse(responseText);
       return res.status(nvidiaResponse.status).json(data);
     } catch (e) {
-      console.error("Upstream non-JSON response:", responseText);
+      console.error("[Upstream Parse Error] Non-JSON received:", responseText);
       return res.status(500).json({ 
         error: "Invalid JSON received from NVIDIA API upstream", 
         details: responseText 
       });
     }
   } catch (error) {
-    console.error("Proxy route error:", error.message);
+    console.error("[Proxy Error]:", error.message);
     return res.status(500).json({ error: error.message });
   }
 });
