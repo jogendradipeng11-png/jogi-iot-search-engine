@@ -4,7 +4,7 @@ const fetch = require('node-fetch');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Enable CORS FIRST before any routes
+// Enable CORS for all origins
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -18,7 +18,7 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
-// Parse up to 50 keys from the JOGI_KEYS environment variable
+// Parse keys from the JOGI_KEYS environment variable
 function getApiKeyPool() {
   const rawKeys = process.env.JOGI_KEYS || '';
   return rawKeys
@@ -56,45 +56,41 @@ async function fetchWithKeyRotation(url, options, retries = 0) {
   };
 
   try {
-    // Add an AbortController timeout of 15 seconds to prevent indefinite hanging
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-    const response = await fetch(url, { 
-      ...options, 
-      headers, 
-      signal: controller.signal 
-    });
-    
-    clearTimeout(timeoutId);
+    console.log(`Attempting request with key index ${currentKeyIndex} (Retries: ${retries})`);
+    const response = await fetch(url, { ...options, headers });
 
     if (response.status === 429 || response.status === 401 || response.status === 403) {
-      console.warn(`API key failed with status ${response.status}. Rotating to next key... (Attempt ${retries + 1} of ${keys.length})`);
+      console.warn(`API key failed with status ${response.status}. Rotating to next key...`);
       return fetchWithKeyRotation(url, options, retries + 1);
     }
 
     return response;
   } catch (error) {
-    console.warn(`Request failed or timed out with current key, retrying...`, error.message);
+    console.warn(`Network error with key, retrying...`, error.message);
     return fetchWithKeyRotation(url, options, retries + 1);
   }
 }
 
-// Explicit route matching for NVIDIA completions
+// NVIDIA API Proxy Endpoint (Forces correct model automatically)
 app.all('/api/nvidia/chat/completions', async (req, res) => {
   try {
     const keysCount = getApiKeyPool().length;
     if (keysCount === 0) {
       return res.status(400).json({ 
-        error: "JOGI_KEYS environment variable is empty or missing on Render. Please add your NVIDIA API keys in your Render dashboard settings." 
+        error: "JOGI_KEYS environment variable is empty or missing on Render. Please add your NVIDIA API keys." 
       });
     }
 
     const targetUrl = 'https://integrate.api.nvidia.com/v1/chat/completions';
-    const bodyData = ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body);
+    
+    // Force the correct NVIDIA model on the server side so the frontend doesn't need to specify it
+    if (!req.body) req.body = {};
+    req.body.model = 'nvidia/llama-3.1-nemotron-70b-instruct';
+
+    const bodyData = JSON.stringify(req.body);
 
     const nvidiaResponse = await fetchWithKeyRotation(targetUrl, {
-      method: req.method,
+      method: 'POST',
       body: bodyData
     });
 
@@ -104,25 +100,23 @@ app.all('/api/nvidia/chat/completions', async (req, res) => {
       const data = JSON.parse(responseText);
       return res.status(nvidiaResponse.status).json(data);
     } catch (e) {
+      console.error("Upstream non-JSON response:", responseText);
       return res.status(500).json({ 
         error: "Invalid JSON received from NVIDIA API upstream", 
         details: responseText 
       });
     }
   } catch (error) {
+    console.error("Proxy route error:", error.message);
     return res.status(500).json({ error: error.message });
   }
 });
 
 // Root & fallback routing
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} with NVIDIA key rotation & CORS enabled.`);
+  console.log(`Server running on port ${PORT} with automated NVIDIA model & key rotation enabled.`);
 });
