@@ -17,7 +17,7 @@ app.use(express.static(path.join(__dirname)));
 
 function getApiKeyPool() {
   const rawKeys = process.env.JOGI_KEYS || '';
-  return rawKeys.split(/[\s,]+/).map(k => k.trim()).filter(k => k.length > 0);
+  return rawKeys.split(/[\s,]+/).map(k => k.trim()).filter(k => k.length > 5);
 }
 
 let currentKeyIndex = 0;
@@ -32,11 +32,16 @@ function getNextApiKey() {
 
 async function fetchWithKeyRotation(url, options, retries = 0) {
   const keys = getApiKeyPool();
-  if (keys.length === 0) throw new Error('CRITICAL: No API keys found in JOGI_KEYS environment variable.');
-  if (retries >= keys.length) throw new Error('All NVIDIA API keys in the pool have failed or exhausted their quota.');
+  if (keys.length === 0) {
+    throw new Error('CRITICAL: No valid API keys found in JOGI_KEYS environment variable.');
+  }
+
+  if (retries >= keys.length) {
+    throw new Error(`All ${keys.length} NVIDIA API keys in the pool have failed or exhausted their quota.`);
+  }
 
   const apiKey = getNextApiKey();
-  console.log(`[Key Rotation] Trying key index ${currentKeyIndex} (Attempt ${retries + 1})`);
+  console.log(`[Key Rotation] Trying key index ${currentKeyIndex} out of ${keys.length} total keys.`);
   
   const headers = {
     ...options.headers,
@@ -47,18 +52,26 @@ async function fetchWithKeyRotation(url, options, retries = 0) {
 
   try {
     const response = await fetch(url, { ...options, headers });
+    const responseText = await response.text();
+
     if (!response.ok) {
-      const errText = await response.text();
-      console.warn(`[Key Failed] Status ${response.status}: ${errText}`);
+      console.warn(`[Key Rejected] Status ${response.status}: ${responseText}`);
+      // Rotate on auth, rate limit, or not found errors
       if ([401, 403, 404, 422, 429].includes(response.status)) {
         return fetchWithKeyRotation(url, options, retries + 1);
       }
-      throw new Error(`API Error (${response.status}): ${errText}`);
+      throw new Error(`NVIDIA API Error (${response.status}): ${responseText}`);
     }
-    return response;
+
+    // Return successful response text parsed back into a mock response object
+    return {
+      status: response.status,
+      text: async () => responseText,
+      json: async () => JSON.parse(responseText)
+    };
   } catch (error) {
-    if (error.message.includes('API Error')) throw error;
-    console.warn(`[Network Error] Retrying...`, error.message);
+    if (error.message.includes('NVIDIA API Error') || error.message.includes('All')) throw error;
+    console.warn(`[Network Error] Retrying with next key...`, error.message);
     return fetchWithKeyRotation(url, options, retries + 1);
   }
 }
@@ -66,14 +79,13 @@ async function fetchWithKeyRotation(url, options, retries = 0) {
 app.all('/api/nvidia/chat/completions', async (req, res) => {
   try {
     if (getApiKeyPool().length === 0) {
-      return res.status(400).json({ error: "JOGI_KEYS environment variable is missing on Render." });
+      return res.status(400).json({ error: "JOGI_KEYS environment variable is empty or missing on Render." });
     }
 
     const targetUrl = 'https://integrate.api.nvidia.com/v1/chat/completions';
     
-    // Fast, lightweight model optimized for quick responses
     const requestBody = {
-      model: "google/codegemma-7b",
+      model: "meta/llama-3.3-70b-instruct",
       messages: req.body && req.body.messages ? req.body.messages : [{ role: "user", content: "Hello" }],
       temperature: 0.3,
       max_tokens: 1024,
@@ -98,5 +110,5 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} with instant key rotation.`);
+  console.log(`Server running on port ${PORT} with robust key rotation.`);
 });
