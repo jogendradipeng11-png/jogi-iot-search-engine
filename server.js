@@ -53,20 +53,25 @@ async function fetchWithKeyRotation(url, options, retries = 0) {
   const headers = {
     ...options.headers,
     'Authorization': `Bearer ${apiKey}`,
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
   };
 
   try {
     const response = await fetch(url, { ...options, headers });
 
-    if (response.status === 429 || response.status === 401 || response.status === 403 || response.status === 422) {
+    if (!response.ok) {
       const errText = await response.text();
       console.warn(`[Key Failed] Key index ${currentKeyIndex} returned status ${response.status}: ${errText}`);
-      return fetchWithKeyRotation(url, options, retries + 1);
+      if (response.status === 429 || response.status === 401 || response.status === 403 || response.status === 422) {
+        return fetchWithKeyRotation(url, options, retries + 1);
+      }
+      throw new Error(`NVIDIA API Error (${response.status}): ${errText}`);
     }
 
     return response;
   } catch (error) {
+    if (error.message.includes('NVIDIA API Error')) throw error;
     console.warn(`[Network Error] Retrying with next key...`, error.message);
     return fetchWithKeyRotation(url, options, retries + 1);
   }
@@ -84,14 +89,18 @@ app.all('/api/nvidia/chat/completions', async (req, res) => {
 
     const targetUrl = 'https://integrate.api.nvidia.com/v1/chat/completions';
     
-    if (!req.body) req.body = {};
-    req.body.model = 'nvidia/llama-3.1-nemotron-70b-instruct';
-
-    const bodyData = JSON.stringify(req.body);
+    // Use a widely supported standard NVIDIA NIM model string
+    const requestBody = {
+      model: "meta/llama3-70b-instruct",
+      messages: req.body && req.body.messages ? req.body.messages : [{ role: "user", content: "Hello" }],
+      temperature: 0.3,
+      max_tokens: 2048,
+      stream: false
+    };
 
     const nvidiaResponse = await fetchWithKeyRotation(targetUrl, {
       method: 'POST',
-      body: bodyData
+      body: JSON.stringify(requestBody)
     });
 
     const responseText = await nvidiaResponse.text();
