@@ -4,6 +4,17 @@ const fetch = require('node-fetch');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
+// Enable CORS FIRST before any routes
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
@@ -59,8 +70,8 @@ async function fetchWithKeyRotation(url, options, retries = 0) {
   }
 }
 
-// NVIDIA API Proxy Endpoint with strict JSON safety
-app.all('/api/nvidia/*', async (req, res) => {
+// Explicit route matching for NVIDIA completions
+app.all('/api/nvidia/chat/completions', async (req, res) => {
   try {
     const keysCount = getApiKeyPool().length;
     if (keysCount === 0) {
@@ -69,9 +80,7 @@ app.all('/api/nvidia/*', async (req, res) => {
       });
     }
 
-    const nvidiaPath = req.params[0] || 'chat/completions';
-    const targetUrl = `https://integrate.api.nvidia.com/v1/${nvidiaPath}`;
-
+    const targetUrl = 'https://integrate.api.nvidia.com/v1/chat/completions';
     const bodyData = ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body);
 
     const nvidiaResponse = await fetchWithKeyRotation(targetUrl, {
@@ -95,7 +104,7 @@ app.all('/api/nvidia/*', async (req, res) => {
   }
 });
 
-// Explicit frontend routing
+// Root & fallback routing
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -105,5 +114,5 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} with NVIDIA key rotation enabled.`);
+  console.log(`Server running on port ${PORT} with NVIDIA key rotation & CORS enabled.`);
 });
