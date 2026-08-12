@@ -33,7 +33,7 @@ function getNextApiKey() {
 async function fetchWithKeyRotation(url, options, retries = 0) {
   const keys = getApiKeyPool();
   if (keys.length === 0) {
-    throw new Error('CRITICAL: No valid API keys found in JOGI_KEYS environment variable.');
+    throw new Error('CRITICAL: No valid API keys found in JOGI_KEYS environment variable on Render.');
   }
 
   if (retries >= keys.length) {
@@ -56,19 +56,28 @@ async function fetchWithKeyRotation(url, options, retries = 0) {
 
     if (!response.ok) {
       console.warn(`[Key Rejected] Status ${response.status}: ${responseText}`);
-      // Rotate on auth, rate limit, or not found errors
       if ([401, 403, 404, 422, 429].includes(response.status)) {
         return fetchWithKeyRotation(url, options, retries + 1);
       }
       throw new Error(`NVIDIA API Error (${response.status}): ${responseText}`);
     }
 
+    // Try parsing JSON to verify it's valid
+    let jsonData;
+    try {
+      jsonData = JSON.parse(responseText);
+    } catch (e) {
+      throw new Error(`Upstream returned non-JSON response: ${responseText.slice(0, 100)}`);
+    }
+
     return {
       status: response.status,
-      json: async () => JSON.parse(responseText)
+      data: jsonData
     };
   } catch (error) {
-    if (error.message.includes('NVIDIA API Error') || error.message.includes('All')) throw error;
+    if (error.message.includes('NVIDIA API Error') || error.message.includes('All') || error.message.includes('CRITICAL')) {
+      throw error;
+    }
     console.warn(`[Network Error] Retrying with next key...`, error.message);
     return fetchWithKeyRotation(url, options, retries + 1);
   }
@@ -82,22 +91,20 @@ app.all('/api/nvidia/chat/completions', async (req, res) => {
 
     const targetUrl = 'https://integrate.api.nvidia.com/v1/chat/completions';
     
-    // Explicitly enforce the standard NVIDIA global model path
     const requestBody = {
-      model: "meta/llama-3.3-70b-instruct",
+      model: "meta/llama-3.1-70b-instruct",
       messages: req.body && req.body.messages ? req.body.messages : [{ role: "user", content: "Hello" }],
       temperature: 0.3,
       max_tokens: 1024,
       stream: false
     };
 
-    const nvidiaResponse = await fetchWithKeyRotation(targetUrl, {
+    const result = await fetchWithKeyRotation(targetUrl, {
       method: 'POST',
       body: JSON.stringify(requestBody)
     });
 
-    const data = await nvidiaResponse.json();
-    return res.status(nvidiaResponse.status).json(data);
+    return res.status(result.status).json(result.data);
   } catch (error) {
     console.error("[Proxy Error]:", error.message);
     return res.status(500).json({ error: error.message });
@@ -109,5 +116,5 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} with clean global model routing.`);
+  console.log(`Server running on port ${PORT} with safe JSON proxy handling.`);
 });
