@@ -29,7 +29,7 @@ function getNextApiKey() {
 async function fetchWithKeyRotation(url, options, retries = 0) {
   const keys = getApiKeyPool();
   if (keys.length === 0) {
-    throw new Error('No API keys found in JOGI_KEYS environment variable on Render.');
+    throw new Error('CRITICAL: No API keys found in JOGI_KEYS environment variable on Render dashboard.');
   }
 
   if (retries >= keys.length) {
@@ -59,9 +59,16 @@ async function fetchWithKeyRotation(url, options, retries = 0) {
   }
 }
 
-// NVIDIA API Proxy Endpoint
+// NVIDIA API Proxy Endpoint with strict JSON safety
 app.all('/api/nvidia/*', async (req, res) => {
   try {
+    const keysCount = getApiKeyPool().length;
+    if (keysCount === 0) {
+      return res.status(400).json({ 
+        error: "JOGI_KEYS environment variable is empty or missing on Render. Please add your NVIDIA API keys in your Render dashboard settings." 
+      });
+    }
+
     const nvidiaPath = req.params[0] || 'chat/completions';
     const targetUrl = `https://integrate.api.nvidia.com/v1/${nvidiaPath}`;
 
@@ -74,19 +81,21 @@ app.all('/api/nvidia/*', async (req, res) => {
 
     const responseText = await nvidiaResponse.text();
     
-    // Ensure we send valid JSON back to the client
     try {
       const data = JSON.parse(responseText);
-      res.status(nvidiaResponse.status).json(data);
+      return res.status(nvidiaResponse.status).json(data);
     } catch (e) {
-      res.status(500).json({ error: "Invalid JSON received from NVIDIA API", details: responseText });
+      return res.status(500).json({ 
+        error: "Invalid JSON received from NVIDIA API upstream", 
+        details: responseText 
+      });
     }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 
-// Explicit root and fallback routes for frontend
+// Explicit frontend routing
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
