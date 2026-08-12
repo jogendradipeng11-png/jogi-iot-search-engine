@@ -5,9 +5,7 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 
 app.use(express.json());
-
-// Serve static files from the current directory
-app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname)));
 
 // Parse up to 50 keys from the JOGI_KEYS environment variable
 function getApiKeyPool() {
@@ -31,7 +29,7 @@ function getNextApiKey() {
 async function fetchWithKeyRotation(url, options, retries = 0) {
   const keys = getApiKeyPool();
   if (keys.length === 0) {
-    throw new Error('No API keys found in JOGI_KEYS environment variable.');
+    throw new Error('No API keys found in JOGI_KEYS environment variable on Render.');
   }
 
   if (retries >= keys.length) {
@@ -74,19 +72,25 @@ app.all('/api/nvidia/*', async (req, res) => {
       body: bodyData
     });
 
-    const data = await nvidiaResponse.json();
-    res.status(nvidiaResponse.status).json(data);
+    const responseText = await nvidiaResponse.text();
+    
+    // Ensure we send valid JSON back to the client
+    try {
+      const data = JSON.parse(responseText);
+      res.status(nvidiaResponse.status).json(data);
+    } catch (e) {
+      res.status(500).json({ error: "Invalid JSON received from NVIDIA API", details: responseText });
+    }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Explicit root route to ensure index.html is served
+// Explicit root and fallback routes for frontend
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Fallback for any other route
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
