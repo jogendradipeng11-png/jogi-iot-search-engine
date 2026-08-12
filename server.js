@@ -5,9 +5,11 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname)));
 
-// Parse up to 50 keys from the JOGI_KEYS environment variable (separated by commas, spaces, or newlines)
+// Serve static files from the current directory
+app.use(express.static(__dirname));
+
+// Parse up to 50 keys from the JOGI_KEYS environment variable
 function getApiKeyPool() {
   const rawKeys = process.env.JOGI_KEYS || '';
   return rawKeys
@@ -18,7 +20,6 @@ function getApiKeyPool() {
 
 let currentKeyIndex = 0;
 
-// Function to get the next NVIDIA API key in a round-robin rotation
 function getNextApiKey() {
   const keys = getApiKeyPool();
   if (keys.length === 0) return null;
@@ -27,7 +28,6 @@ function getNextApiKey() {
   return key;
 }
 
-// Helper to handle requests with automatic key rotation on quota exhaustion / rate limits (429 or 401/403)
 async function fetchWithKeyRotation(url, options, retries = 0) {
   const keys = getApiKeyPool();
   if (keys.length === 0) {
@@ -49,7 +49,6 @@ async function fetchWithKeyRotation(url, options, retries = 0) {
   try {
     const response = await fetch(url, { ...options, headers });
 
-    // If quota exceeded (429) or unauthorized/forbidden (401/403), rotate to the next key immediately
     if (response.status === 429 || response.status === 401 || response.status === 403) {
       console.warn(`API key failed with status ${response.status}. Rotating to next key... (Attempt ${retries + 1} of ${keys.length})`);
       return fetchWithKeyRotation(url, options, retries + 1);
@@ -62,10 +61,10 @@ async function fetchWithKeyRotation(url, options, retries = 0) {
   }
 }
 
-// Proxy endpoint that forwards requests to NVIDIA's API with automatic key rotation
+// NVIDIA API Proxy Endpoint
 app.all('/api/nvidia/*', async (req, res) => {
   try {
-    const nvidiaPath = req.params[0] || '';
+    const nvidiaPath = req.params[0] || 'chat/completions';
     const targetUrl = `https://integrate.api.nvidia.com/v1/${nvidiaPath}`;
 
     const bodyData = ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body);
@@ -82,7 +81,12 @@ app.all('/api/nvidia/*', async (req, res) => {
   }
 });
 
-// Fallback to index.html for frontend routing
+// Explicit root route to ensure index.html is served
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Fallback for any other route
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
