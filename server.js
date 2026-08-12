@@ -56,7 +56,17 @@ async function fetchWithKeyRotation(url, options, retries = 0) {
   };
 
   try {
-    const response = await fetch(url, { ...options, headers });
+    // Add an AbortController timeout of 15 seconds to prevent indefinite hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    const response = await fetch(url, { 
+      ...options, 
+      headers, 
+      signal: controller.signal 
+    });
+    
+    clearTimeout(timeoutId);
 
     if (response.status === 429 || response.status === 401 || response.status === 403) {
       console.warn(`API key failed with status ${response.status}. Rotating to next key... (Attempt ${retries + 1} of ${keys.length})`);
@@ -65,7 +75,7 @@ async function fetchWithKeyRotation(url, options, retries = 0) {
 
     return response;
   } catch (error) {
-    console.warn(`Network error with current key, retrying with next key...`, error.message);
+    console.warn(`Request failed or timed out with current key, retrying...`, error.message);
     return fetchWithKeyRotation(url, options, retries + 1);
   }
 }
