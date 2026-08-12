@@ -261,8 +261,7 @@ async function send(){
   $('statusText').textContent = 'Thinking (Render Key Rotation)...';
 
   try {
-    try {
-      // Point explicitly to your Render backend URL
+     // Point explicitly to your Render backend URL
       const response = await fetch('https://jogi-iot-search-engine.onrender.com/api/nvidia/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
