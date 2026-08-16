@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ChatGPT - Jogi AI</title>
+<title>JogiIoT - AI Assistant</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#212121">
 <meta name="mobile-web-app-capable" content="yes">
@@ -91,7 +91,7 @@ body{font-family:Söhne,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ub
 
 <div class="main">
   <div class="header">
-    <span>ChatGPT</span>
+    <span>JogiIoT</span>
     <div class="status"><div class="dot"></div><span id="statusText">Ready</span></div>
   </div>
 
@@ -111,7 +111,7 @@ body{font-family:Söhne,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ub
     <div class="input-box">
       <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="Attach image">+</button>
       <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(this)">
-      <textarea id="input" rows="1" placeholder="Message ChatGPT..." onkeydown="handleKey(event)"></textarea>
+      <textarea id="input" rows="1" placeholder="Ask JogiIoT anything..." onkeydown="handleKey(event)"></textarea>
       <button class="send-btn" id="sendBtn" onclick="send()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
       </button>
@@ -191,7 +191,7 @@ function addMsg(role, content){
   const row = document.createElement('div');
   row.className = 'message-row '+role;
   let html = role==='assistant' ? marked.parse(content) : esc(content).replace(/\n/g, '<br>');
-  row.innerHTML = `<div class="message-inner"><div class="avatar ${role==='user'?'user':'ai'}">${role==='user'?'You':'GPT'}</div><div class="content">${html}</div></div>`;
+  row.innerHTML = `<div class="message-inner"><div class="avatar ${role==='user'?'user':'ai'}">${role==='user'?'You':'JI'}</div><div class="content">${html}</div></div>`;
   chat.appendChild(row);
   chat.scrollTop = chat.scrollHeight;
   row.querySelectorAll('pre code').forEach(el=>hljs.highlightElement(el));
@@ -210,7 +210,7 @@ function addActions(container, raw){
 function showTyping(){
   const chat = $('chat');
   const row = document.createElement('div'); row.className = 'message-row assistant'; row.id = 'typing';
-  row.innerHTML = '<div class="message-inner"><div class="avatar ai">GPT</div><div class="content"><div class="typing"><span></span><span></span><span></span></div></div></div>';
+  row.innerHTML = '<div class="message-inner"><div class="avatar ai">JI</div><div class="content"><div class="typing"><span></span><span></span><span></span></div></div></div>';
   chat.appendChild(row); chat.scrollTop = chat.scrollHeight;
 }
 function removeTyping(){ const t = $('typing'); if(t) t.remove(); }
@@ -250,7 +250,7 @@ async function send(){
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messages: [
-          { role: "system", content: "You are ChatGPT, an expert AI assistant. Provide fast, accurate, and detailed answers, code examples, and image analyses." },
+          { role: "system", content: "You are JogiIoT, an expert AI assistant and coding/IoT companion built for Jogi. Provide fast, accurate, and detailed answers, code examples, and image analyses." },
           ...messages
         ]
       })
