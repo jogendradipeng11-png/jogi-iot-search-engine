@@ -12,7 +12,8 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
+// Increased payload limit to support image and file attachments
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname)));
 
 function getApiKeyPool() {
@@ -62,7 +63,6 @@ async function fetchWithKeyRotation(url, options, retries = 0) {
       throw new Error(`NVIDIA API Error (${response.status}): ${responseText}`);
     }
 
-    // Try parsing JSON to verify it's valid
     let jsonData;
     try {
       jsonData = JSON.parse(responseText);
@@ -91,11 +91,15 @@ app.all('/api/nvidia/chat/completions', async (req, res) => {
 
     const targetUrl = 'https://integrate.api.nvidia.com/v1/chat/completions';
     
+    // Automatically detect if an image is attached to route to the vision model
+    const hasImages = req.body && req.body.messages && req.body.messages.some(m => Array.isArray(m.content));
+    const selectedModel = hasImages ? "meta/llama-3.2-11b-vision-instruct" : "meta/llama-3.1-70b-instruct";
+
     const requestBody = {
-      model: "meta/llama-3.1-70b-instruct",
+      model: selectedModel,
       messages: req.body && req.body.messages ? req.body.messages : [{ role: "user", content: "Hello" }],
       temperature: 0.3,
-      max_tokens: 1024,
+      max_tokens: 2048,
       stream: false
     };
 
@@ -116,5 +120,5 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} with safe JSON proxy handling.`);
+  console.log(`Server running on port ${PORT} with multimodal proxy and key rotation enabled.`);
 });
